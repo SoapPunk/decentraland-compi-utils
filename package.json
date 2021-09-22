@@ -1,0 +1,59 @@
+{
+  "name": "@compicactus/dcl-scene-utils",
+  "version": "0.0.0-development",
+  "description": "A tool to display compicactus NPCs on Decentraland.",
+  "main": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "decentralandLibrary": {},
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "semantic-release": "semantic-release",
+    "build": "rollup -c --environment BUILD:production",
+    "link": "npm link && rollup --watch -c --environment BUILD:production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SoapPunk/decentraland-compi-utils.git"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "semi": false
+  },
+  "keywords": [],
+  "author": "eibriel",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/SoapPunk/decentraland-compi-utils/issues"
+  },
+  "homepage": "https://github.com/SoapPunk/decentraland-compi-utils",
+  "devDependencies": {
+    "prettier": "^1.19.1",
+    "semantic-release": "^16.0.1",
+    "typescript": "^3.9.3",
+    "rollup": "^2.35.1",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.29.0",
+    "decentraland-ecs": "^6.6.7"
+  },
+  "dependencies": {
+    "decentraland-transactions": "^1.22.2",
+    "eth-connect": "^6.0.2"
+  },
+  "bundleDependencies": [
+    "decentraland-transactions",
+    "eth-connect"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ]
+  }
+}
