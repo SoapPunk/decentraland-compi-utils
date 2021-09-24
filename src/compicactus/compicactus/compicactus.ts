@@ -1,4 +1,7 @@
-import { fetchRetry } from './common'
+import { fetchRetry } from '../common'
+import planesMenu from "./planesMenuB"
+
+export {planesMenu}
 
 const elements = [
     "cigar",
@@ -22,7 +25,7 @@ const compi_actions = [
     "Action-09-Pised_Off",
     "Action-10-Yawn",
     "Action-11-Alert",
-    "Action-12 Sigh",
+    "Action-12_Sigh",
 ]
 /*
 type Variations = {

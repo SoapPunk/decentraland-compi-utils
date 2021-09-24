@@ -1,15 +1,11 @@
-import { Blockchain } from "./contracts"
+import { Blockchain } from "./contracts/contracts"
 // import { Mint } from "./mint"
 // import { Teach } from "./teach"
-import { Compicactus } from "./compicactus"
-import * as eth from "eth-connect"
+import { Compicactus, planesMenu as compicactusPlanesMenu } from "./compicactus/compicactus"
 
-import planesMenu from "./planesMenuB"
+import { CHARACTER } from "./constants"
 
-const current_chain = "matic"
-//const current_chain = "mumbai"
-//const current_chain = "mockup"
-const blockchain = new Blockchain(current_chain)
+//import * as eth from "eth-connect"
 
 
 const panelsAlbedoTexture = new Texture("https://dweb.link/ipfs/bafybeifaih2h275bmmessdnwk5tkbbdsc6y4aacpbiu4jdsu2numusrxne/CompiUIB.png")
@@ -62,7 +58,8 @@ export class StoolComponent {
     forced: boolean = false
 }
 
-export class Stool extends Entity {
+export class CompiNPC extends Entity {
+
     compi_entity: Compicactus
 
     compidata_entity: Entity
@@ -89,8 +86,17 @@ export class Stool extends Entity {
 
     textInput:UIInputText
 
-    constructor(id: number = -1) {
+    network: Blockchain
+
+    planesMenu: any
+
+    constructor(id: number, network: Blockchain) {
         super()
+        if (network.character == CHARACTER.COMPICACTUS) {
+            this.planesMenu = compicactusPlanesMenu
+        } else {
+            throw new Error(`Character not found: ${network.character}`)
+        }
 
         this.textInput = new UIInputText(canvas)
 
@@ -107,7 +113,7 @@ export class Stool extends Entity {
         }
 
         if (!this.stool_component.forced) {
-            const arrowleftcompi_entity = this.createPlane(planesMenu.ArrowLeftCompi)
+            const arrowleftcompi_entity = this.createPlane(this.planesMenu.ArrowLeftCompi)
             arrowleftcompi_entity.addComponent(
                 new OnPointerDown(()=>{
                     this.stool_component.current_action = "previous_compi"
@@ -116,7 +122,7 @@ export class Stool extends Entity {
                     hoverText: "Previous Compi"
                 })
             )
-            const arrowrightcompi_entity = this.createPlane(planesMenu.ArrowRightCompi)
+            const arrowrightcompi_entity = this.createPlane(this.planesMenu.ArrowRightCompi)
             arrowrightcompi_entity.addComponent(
                 new OnPointerDown(()=>{
                     this.stool_component.current_action = "next_compi"
@@ -125,7 +131,7 @@ export class Stool extends Entity {
                     hoverText: "Next Compi"
                 })
             )
-            const addquestion_entity = this.createPlane(planesMenu.Add)
+            const addquestion_entity = this.createPlane(this.planesMenu.Add)
             addquestion_entity.addComponent(
                 new OnPointerDown(() => {
                     this.stool_component.current_action = "add_question"
@@ -134,7 +140,7 @@ export class Stool extends Entity {
                     hoverText: "Add question",
                 })
             )
-            this.editanswer_entity = this.createPlane(planesMenu.EditAnswer)
+            this.editanswer_entity = this.createPlane(this.planesMenu.EditAnswer)
             this.editanswer_entity.getComponent(PlaneShape).visible = false
             this.editanswer_entity.addComponent(
                 new OnPointerDown(() => {
@@ -144,7 +150,7 @@ export class Stool extends Entity {
                     hoverText: "Edit answer",
                 })
             )
-            this.remove_entity = this.createPlane(planesMenu.Remove)
+            this.remove_entity = this.createPlane(this.planesMenu.Remove)
             this.remove_entity.getComponent(PlaneShape).visible = false
             this.remove_entity.addComponent(
                 new OnPointerDown(() => {
@@ -154,7 +160,7 @@ export class Stool extends Entity {
                     hoverText: "Remove Question",
                 })
             )
-            const editname_entity = this.createPlane(planesMenu.EditName)
+            const editname_entity = this.createPlane(this.planesMenu.EditName)
             editname_entity.addComponent(
                 new OnPointerDown(() => {
                     this.stool_component.current_action = "set_name"
@@ -163,7 +169,7 @@ export class Stool extends Entity {
                     hoverText: "Set Name",
                 })
             )
-            this.cancel_entity = this.createPlane(planesMenu.CancelRedCompi)
+            this.cancel_entity = this.createPlane(this.planesMenu.CancelRedCompi)
             engine.removeEntity(this.cancel_entity)
             this.cancel_entity.addComponent(
                 new OnPointerDown(() => {
@@ -173,7 +179,7 @@ export class Stool extends Entity {
                     hoverText: "Cancel",
                 })
             )
-            this.error_entity = this.createPlane(planesMenu.CancelRedCompi)
+            this.error_entity = this.createPlane(this.planesMenu.CancelRedCompi)
             engine.removeEntity(this.error_entity)
             this.error_entity.addComponent(
                 new OnPointerDown(() => {
@@ -183,7 +189,7 @@ export class Stool extends Entity {
                     hoverText: "Error. Please try again!",
                 })
             )
-            this.ok_entity = this.createPlane(planesMenu.OkGreenCompi)
+            this.ok_entity = this.createPlane(this.planesMenu.OkGreenCompi)
             engine.removeEntity(this.ok_entity)
             this.ok_entity.addComponent(
                 new OnPointerDown(() => {
@@ -193,7 +199,7 @@ export class Stool extends Entity {
                     hoverText: "Success",
                 })
             )
-            this.working_entity = this.createPlane(planesMenu.WorkingYellowCompi)
+            this.working_entity = this.createPlane(this.planesMenu.WorkingYellowCompi)
             engine.removeEntity(this.working_entity)
             this.working_entity.addComponent(
                 new OnPointerDown(() => {},
@@ -202,7 +208,7 @@ export class Stool extends Entity {
                 })
             )
         }
-        this.arrowleftquestions_entity = this.createPlane(planesMenu.ArrowLeftQuestions)
+        this.arrowleftquestions_entity = this.createPlane(this.planesMenu.ArrowLeftQuestions)
         this.arrowleftquestions_entity.addComponent(
             new OnPointerDown(() => {
                 this.stool_component.current_action = "previous_question_page"
@@ -211,7 +217,7 @@ export class Stool extends Entity {
                 hoverText: "Prev page",
             })
         )
-        this.arrowrightquestions_entity = this.createPlane(planesMenu.ArrowRightQuestions)
+        this.arrowrightquestions_entity = this.createPlane(this.planesMenu.ArrowRightQuestions)
         this.arrowrightquestions_entity.addComponent(
             new OnPointerDown(() => {
                 this.stool_component.current_action = "next_question_page"
@@ -220,12 +226,12 @@ export class Stool extends Entity {
                 hoverText: "Next page",
             })
         )
-        const backgroundanswers_entity = this.createPlane(planesMenu.BackgroundAnswers)
-        const backgroundcompicactus_entity = this.createPlane(planesMenu.BackgroundCompicactus)
-        const backgroundquestions_entity = this.createPlane(planesMenu.BackgroundQuestions)
-        const compiplaceholder_entity = this.createPlane(planesMenu.Compicactus)
+        const backgroundanswers_entity = this.createPlane(this.planesMenu.BackgroundAnswers)
+        const backgroundcompicactus_entity = this.createPlane(this.planesMenu.BackgroundCompicactus)
+        const backgroundquestions_entity = this.createPlane(this.planesMenu.BackgroundQuestions)
+        const compiplaceholder_entity = this.createPlane(this.planesMenu.Compicactus)
         //const selectedquestions_entity = this.createPlane(planesMenu.SelectedQuestion)
-        const name_entity = this.createPlane(planesMenu.Name)
+        const name_entity = this.createPlane(this.planesMenu.Name)
 
         // Compicactus
         engine.removeEntity(compiplaceholder_entity)
@@ -345,12 +351,17 @@ export class Stool extends Entity {
 
 const stoolGroup = engine.getComponentGroup(StoolComponent)
 
-export class StoolSystem implements ISystem {
-    working = false
+export class CompiNPCSystem implements ISystem {
+    working: boolean = false
+    blockchain: Blockchain
+
+    constructor(network: Blockchain) {
+        this.blockchain = network
+    }
 
     update(dt: number) {
         for (let entity of stoolGroup.entities) {
-            let stool = entity as Stool
+            let stool = entity as CompiNPC
             const stool_component = entity.getComponent(StoolComponent)
 
             if (stool_component.answer != stool.answer_shape.value) {
@@ -377,6 +388,12 @@ export class StoolSystem implements ISystem {
             }
 
             if (this.working) continue
+            if (stool_component.current_action == "goto_compi") {
+                this.working = true
+                stool_component.current_action = ""
+                this.goto(stool_component)
+                continue
+            }
             if (stool_component.current_compi == -1) {
                 this.working = true
                 stool_component.current_action = ""
@@ -410,40 +427,34 @@ export class StoolSystem implements ISystem {
                 this.goto(stool_component)
                 continue
             }
-            if (stool_component.current_action == "goto_compi") {
-                this.working = true
-                stool_component.current_action = ""
-                this.goto(stool_component)
-                continue
-            }
             if (stool_component.current_action == "add_question") {
                 this.working = true
                 stool_component.current_action = ""
-                this.addQuestion(entity as Stool)
+                this.addQuestion(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "remove_question") {
                 this.working = true
                 stool_component.current_action = ""
-                this.removeQuestion(entity as Stool)
+                this.removeQuestion(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "edit_answer") {
                 this.working = true
                 stool_component.current_action = ""
-                this.editAnwser(entity as Stool)
+                this.editAnwser(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "set_name") {
                 this.working = true
                 stool_component.current_action = ""
-                this.setName(entity as Stool)
+                this.setName(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "ask_question") {
                 this.working = true
                 stool_component.current_action = ""
-                this.askQuestion(entity as Stool)
+                this.askQuestion(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "previous_question") {
@@ -483,7 +494,7 @@ export class StoolSystem implements ISystem {
         log("goto")
         if(!stool_component.forced) {
             log("Getting compis")
-            const compisCount = await blockchain.balanceOf()
+            const compisCount = await this.blockchain.balanceOf()
 
             if (compisCount>0) {
                 if (stool_component.goto_compi<0) {
@@ -549,7 +560,7 @@ export class StoolSystem implements ISystem {
 
         log("current_qpage", stool_component.current_qpage)
         const offset = stool_component.current_qpage * 10
-        const questions = await blockchain.getQuestions(stool_component.current_token, offset)
+        const questions = await this.blockchain.getQuestions(stool_component.current_token, offset)
         log(questions)
 
         for (let n=0; n < questions.length; n++) {
@@ -565,14 +576,14 @@ export class StoolSystem implements ISystem {
         this.working = false
     }
 
-    async updateCompi(entity: Stool, update_picture: boolean = true) {
+    async updateCompi(entity: CompiNPC, update_picture: boolean = true) {
         const stool_component = entity.getComponent(StoolComponent)
         stool_component.dirty_compi = false
         if (stool_component.current_compi < 0) {
             this.working = false
             return
         }
-
+        log("updateCompi")
         entity.compidata_shape.value = "-"
 
         let compiId: number = 0
@@ -580,14 +591,14 @@ export class StoolSystem implements ISystem {
             entity.editanswer_entity.getComponent(PlaneShape).visible = false
             entity.remove_entity.getComponent(PlaneShape).visible = false
 
-            compiId = await blockchain.tokenOfOwnerByIndex(stool_component.current_compi)
+            compiId = await this.blockchain.tokenOfOwnerByIndex(stool_component.current_compi)
 
             stool_component.current_token = compiId
         } else {
             compiId = stool_component.current_token = stool_component.current_compi
         }
         log("compiId", compiId)
-        const compiName = await blockchain.getName(compiId)
+        const compiName = await this.blockchain.getName(compiId)
 
         entity.compidata_shape.value = `#${compiId}:${compiName}`
 
@@ -600,9 +611,9 @@ export class StoolSystem implements ISystem {
         this.working = false
     }
 
-    async updateQuestions(entity: Stool) {
+    async updateQuestions(entity: CompiNPC) {
         const stool_component = entity.getComponent(StoolComponent)
-        const questionCount = await blockchain.getQuestionsCount(stool_component.current_token)
+        const questionCount = await this.blockchain.getQuestionsCount(stool_component.current_token)
 
         entity.arrowleftquestions_entity.getComponent(PlaneShape).visible = true
         entity.arrowrightquestions_entity.getComponent(PlaneShape).visible = true
@@ -640,7 +651,7 @@ export class StoolSystem implements ISystem {
         this.working = false
     }
 
-    async setName(entity: Stool) {
+    async setName(entity: CompiNPC) {
         const stool_component = entity.getComponent(StoolComponent)
         log("Set Name")
         if (stool_component.current_compi < 0) return
@@ -653,7 +664,7 @@ export class StoolSystem implements ISystem {
             entity.textInput.visible = false
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await blockchain.setName(stool_component.current_token, x.text).then(tx => {
+            await this.blockchain.setName(stool_component.current_token, x.text).then(tx => {
                 stool_component.dirty_compi = true
                 this.working = false
                 engine.removeEntity(entity.working_entity)
@@ -671,10 +682,10 @@ export class StoolSystem implements ISystem {
         engine.addEntity(entity.cancel_entity)
     }
 
-    async askQuestion(entity: Stool) {
+    async askQuestion(entity: CompiNPC) {
         const stool_component = entity.getComponent(StoolComponent)
         const question_text = stool_component.question_list[stool_component.current_question].value
-        const answer = await blockchain.getAnswer(stool_component.current_token, question_text)
+        const answer = await this.blockchain.getAnswer(stool_component.current_token, question_text)
         const answer_text = `You: ${question_text}\n\nCompi: ${answer}`
         stool_component.answer = answer_text
         const clip_id = Math.floor(Math.random()*11)
@@ -686,7 +697,7 @@ export class StoolSystem implements ISystem {
         this.working = false
     }
 
-    async addQuestion(entity: Stool) {
+    async addQuestion(entity: CompiNPC) {
         const stool_component = entity.getComponent(StoolComponent)
         entity.textInput.visible = true
         entity.textInput.placeholder = "Write question"
@@ -696,7 +707,7 @@ export class StoolSystem implements ISystem {
             entity.textInput.visible = false
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await blockchain.addQuestion(stool_component.current_token, x.text, "Default answer").then(tx => {
+            await this.blockchain.addQuestion(stool_component.current_token, x.text, "Default answer").then(tx => {
                 //stool_component.dirty_compi = true
                 this.working = false
                 engine.removeEntity(entity.working_entity)
@@ -713,12 +724,12 @@ export class StoolSystem implements ISystem {
         engine.addEntity(entity.cancel_entity)
     }
 
-    async removeQuestion(entity: Stool) {
+    async removeQuestion(entity: CompiNPC) {
         const stool_component = entity.getComponent(StoolComponent)
         const questionText = stool_component.question_list[stool_component.current_question].value
         const questionId = stool_component.question_list[stool_component.current_question].id
         engine.addEntity(entity.working_entity)
-        await blockchain.removeQuestion(stool_component.current_token, questionText, questionId).then(tx => {
+        await this.blockchain.removeQuestion(stool_component.current_token, questionText, questionId).then(tx => {
             //stool_component.dirty_compi = true
             this.working = false
             engine.removeEntity(entity.working_entity)
@@ -732,7 +743,7 @@ export class StoolSystem implements ISystem {
         })
     }
 
-    async editAnwser(entity: Stool) {
+    async editAnwser(entity: CompiNPC) {
         const stool_component = entity.getComponent(StoolComponent)
         log("Edit Anwser")
         engine.addEntity(entity.cancel_entity)
@@ -745,7 +756,7 @@ export class StoolSystem implements ISystem {
             const question = stool_component.question_list[stool_component.current_question].value
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await blockchain.addQuestion(stool_component.current_token, question, x.text).then(tx => {
+            await this.blockchain.addQuestion(stool_component.current_token, question, x.text).then(tx => {
                 //stool_component.dirty_compi = true
                 this.working = false
                 engine.removeEntity(entity.working_entity)

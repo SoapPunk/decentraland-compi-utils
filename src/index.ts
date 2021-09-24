@@ -1,5 +1,13 @@
-import { Stool } from "./compicactus/stool"
+import { CompiNPC, CompiNPCSystem } from "./compicactus/compi_npc"
+import { CHARACTER, NETWORK } from "./compicactus/constants"
+import { Compicactus } from "./compicactus/compicactus/compicactus"
+import { Blockchain } from "./compicactus/contracts/contracts"
 
 export {
-    Stool
+    CompiNPC,
+    CompiNPCSystem,
+    Compicactus,
+    Blockchain,
+    CHARACTER,
+    NETWORK
 }
