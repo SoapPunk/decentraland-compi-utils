@@ -187,6 +187,10 @@ export class Compicactus extends Entity {
         this.set_mp4_body(this.current_compi, clip_id, false)
     }
 
+    play(clip_id: number) {
+        this.set_mp4_body(this.current_compi, clip_id, false)
+    }
+
     remove_elements() {
         for (let n=0; n<this.element_entities.length; n++) {
             engine.removeEntity(this.element_entities[n])

@@ -3,7 +3,7 @@ import { Blockchain } from "./contracts/contracts"
 // import { Teach } from "./teach"
 import { Compicactus, planesMenu as compicactusPlanesMenu } from "./compicactus/compicactus"
 
-import { CHARACTER } from "./constants"
+import { CHARACTER, EMOTE } from "./constants"
 
 //import * as eth from "eth-connect"
 
@@ -56,6 +56,10 @@ export class StoolComponent {
     current_action: string = ""
 
     forced: boolean = false
+
+    broadcast: Array<any> = []
+
+    working: boolean = false
 }
 
 export class CompiNPC extends Entity {
@@ -251,7 +255,7 @@ export class CompiNPC extends Entity {
                 }
             },
             {
-                hoverText: "Ask selected question",
+                hoverText: "E: Up - F: Down - Click: Ask",
             })
         )
 
@@ -356,7 +360,7 @@ export class CompiNPC extends Entity {
 const stoolGroup = engine.getComponentGroup(StoolComponent)
 
 export class CompiNPCSystem implements ISystem {
-    working: boolean = false
+    //working: boolean = false
     blockchain: Blockchain
 
     constructor(network: Blockchain) {
@@ -377,8 +381,7 @@ export class CompiNPCSystem implements ISystem {
                 stool.questions_shape.width = 1.2
             }
             if (stool_component.play_animation >= 0) {
-                //stool.compi_entity.set_mp4_body(stool_component.current_token, stool_component.play_animation)
-                stool.compi_entity.play_random()
+                stool.compi_entity.play(stool_component.play_animation)
                 stool_component.play_animation = -1
             }
 
@@ -387,19 +390,19 @@ export class CompiNPCSystem implements ISystem {
                 stool.textInput.visible = false
                 //stool.cancel_entity.getComponent(PlaneShape).visible = false
                 engine.removeEntity(stool.cancel_entity)
-                this.working = false
+                stool_component.working = false
                 continue
             }
 
-            if (this.working) continue
+            if (stool_component.working) continue
             if (stool_component.current_action == "goto_compi") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 this.goto(stool_component)
                 continue
             }
             if (stool_component.current_compi == -1) {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = 0
                 this.goto(stool_component)
@@ -408,68 +411,68 @@ export class CompiNPCSystem implements ISystem {
                 continue
             }
             if (stool_component.dirty_compi) {
-                this.working = true
+                stool_component.working = true
                 this.updateCompi(stool)
                 continue
             }
             if (stool_component.dirty_questions) {
-                this.working = true
+                stool_component.working = true
                 this.updateQuestions(stool)
                 continue
             }
             if (stool_component.current_action == "previous_compi") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = stool_component.current_compi - 1
                 this.goto(stool_component)
                 continue
             }
             if (stool_component.current_action == "next_compi") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = stool_component.current_compi + 1
                 this.goto(stool_component)
                 continue
             }
             if (stool_component.current_action == "add_question") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 this.addQuestion(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "remove_question") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 this.removeQuestion(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "edit_answer") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 this.editAnwser(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "set_name") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 this.setName(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "ask_question") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 this.askQuestion(entity as CompiNPC)
                 continue
             }
             if (stool_component.current_action == "previous_question") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_question = stool_component.current_question - 1
                 this.gotoQuestion(stool_component)
                 continue
             }
             if (stool_component.current_action == "next_question") {
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_question = stool_component.current_question + 1
                 this.gotoQuestion(stool_component)
@@ -477,7 +480,7 @@ export class CompiNPCSystem implements ISystem {
             }
             if (stool_component.current_action == "previous_question_page") {
                 log("action: previous_question_page")
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_qpage = stool_component.current_qpage - 1
                 this.gotoQPage(stool_component)
@@ -485,7 +488,7 @@ export class CompiNPCSystem implements ISystem {
             }
             if (stool_component.current_action == "next_question_page") {
                 log("action: next_question_page")
-                this.working = true
+                stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_qpage = stool_component.current_qpage + 1
                 this.gotoQPage(stool_component)
@@ -496,28 +499,43 @@ export class CompiNPCSystem implements ISystem {
 
     async goto(stool_component: StoolComponent) {
         log("goto")
+        log("stool_component.current_compi", stool_component.current_compi)
+        log("stool_component.goto_compi", stool_component.goto_compi)
+        log("stool_component.dirty_compi", stool_component.dirty_compi)
         if(!stool_component.forced) {
             log("Getting compis")
             const compisCount = await this.blockchain.balanceOf()
+            log("compisCount", compisCount)
             if (compisCount>0) {
+                log("compisCount>0")
                 if (stool_component.goto_compi<0) {
+                    log("stool_component.goto_compi<0")
                     stool_component.current_compi = compisCount-1
                     stool_component.dirty_compi = true
                 } else if (stool_component.goto_compi>=compisCount) {
+                    log("stool_component.goto_compi>=compisCount")
                     stool_component.current_compi = 0
                     stool_component.dirty_compi = true
+                } else {
+                    stool_component.current_compi = stool_component.goto_compi
+                    //stool_component.goto_compi = stool_component.current_compi
+                    stool_component.dirty_compi = true
                 }
-                //stool_component.current_compi = stool_component.goto_compi
-                stool_component.dirty_compi = true
             } else {
+                log("else1")
                 stool_component.current_compi = -2
             }
         } else {
+            log("else2")
             stool_component.current_compi = stool_component.goto_compi
             stool_component.dirty_compi = true
         }
 
-        this.working = false
+        log("stool_component.current_compi", stool_component.current_compi)
+        log("stool_component.goto_compi", stool_component.goto_compi)
+        log("stool_component.dirty_compi", stool_component.dirty_compi)
+
+        stool_component.working = false
     }
 
     async gotoQuestion(stool_component: StoolComponent) {
@@ -542,7 +560,7 @@ export class CompiNPCSystem implements ISystem {
 
         log(stool_component.goto_question, stool_component.current_question)
 
-        this.working = false
+        stool_component.working = false
     }
 
     async gotoQPage(stool_component: StoolComponent) {
@@ -576,14 +594,14 @@ export class CompiNPCSystem implements ISystem {
         stool_component.current_question = 0
 
         stool_component.dirty_questions = true
-        this.working = false
+        stool_component.working = false
     }
 
     async updateCompi(entity: CompiNPC, update_picture: boolean = true) {
         const stool_component = entity.getComponent(StoolComponent)
         stool_component.dirty_compi = false
         if (stool_component.current_compi < 0) {
-            this.working = false
+            stool_component.working = false
             return
         }
         log("updateCompi")
@@ -611,7 +629,7 @@ export class CompiNPCSystem implements ISystem {
 
         this.gotoQPage(stool_component)
 
-        this.working = false
+        stool_component.working = false
     }
 
     async updateQuestions(entity: CompiNPC) {
@@ -639,8 +657,8 @@ export class CompiNPCSystem implements ISystem {
             if (stool_component.current_question == n) {
                 questions_text += "> "
             }
-            questions_text += `${stool_component.question_list[n].value}\n`
             if (stool_component.question_list[n].value != "") {
+                questions_text += `- ${stool_component.question_list[n].value}\n`
                 questions_count += 1
             }
         }
@@ -651,7 +669,7 @@ export class CompiNPCSystem implements ISystem {
         }
 
         stool_component.dirty_questions = false
-        this.working = false
+        stool_component.working = false
     }
 
     async setName(entity: CompiNPC) {
@@ -669,12 +687,12 @@ export class CompiNPCSystem implements ISystem {
             engine.addEntity(entity.working_entity)
             await this.blockchain.setName(stool_component.current_token, x.text).then(tx => {
                 stool_component.dirty_compi = true
-                this.working = false
+                stool_component.working = false
                 engine.removeEntity(entity.working_entity)
                 engine.addEntity(entity.ok_entity)
                 log("setName Ok ", tx)
             }).catch(e => {
-                this.working = false
+                stool_component.working = false
                 engine.removeEntity(entity.working_entity)
                 engine.addEntity(entity.error_entity)
                 log("Error on setName", e)
@@ -689,15 +707,64 @@ export class CompiNPCSystem implements ISystem {
         const stool_component = entity.getComponent(StoolComponent)
         const question_text = stool_component.question_list[stool_component.current_question].value
         const answer = await this.blockchain.getAnswer(stool_component.current_token, question_text)
-        const answer_text = `You: ${question_text}\n\nCompi: ${answer}`
+        log(answer)
+        //const regex = /(^.*?)(\{.*\})$/gm;
+        //const regex = /(^.*?)(\{.*\})?$/;
+        const regex = /\{.*?\}/g;
+
+        //let matches = [];
+        let m;
+        let clean_answer = answer;
+        while ((m = regex.exec(answer)) !== null) {
+            // This is necessary to avoid infinite loops with zero-width matches
+            if (m.index === regex.lastIndex) {
+                regex.lastIndex++;
+            }
+
+            // The result can be accessed through the `m`-variable.
+            m.forEach((match, groupIndex) => {
+                log(`Found match, group ${groupIndex}: ${match}`);
+                //matches.push(match)
+                let json_match = undefined;
+                try {
+                    json_match = JSON.parse(match);
+                } catch {
+                    log(`Error parsing json to broadcast ${match}`);
+                }
+                if (json_match != undefined) {
+                    stool_component.broadcast.push(json_match);
+                }
+                clean_answer = clean_answer.replace(match, "");
+            });
+        }
+        log("stool_component.broadcast", stool_component.broadcast)
+        const answer_text = `You: ${question_text}\n\nCompi: ${clean_answer}`
         stool_component.answer = answer_text
-        const clip_id = Math.floor(Math.random()*11)
-        stool_component.play_animation = clip_id
+        const clip_id = Math.floor(Math.random()*3)
+        let animate = false
+        for (let n=0; n<stool_component.broadcast.length; n++) {
+            if (stool_component.broadcast[n].emote != undefined) {
+                stool_component.play_animation = emote2id(stool_component.broadcast[n].emote)
+                stool_component.broadcast[n].emote = undefined
+                animate = true
+            }
+            /* This don't work for security reasons
+            if (stool_component.broadcast[n].open_url != undefined) {
+                openExternalURL(""+stool_component.broadcast[n].open_url)
+                stool_component.broadcast[n].open_url = undefined
+            }*/
+        }
+        if (!animate) {
+            stool_component.play_animation = clip_id
+        }
+        log("stool_component.play_animation", stool_component.play_animation)
+
+
         if (!stool_component.forced) {
             entity.editanswer_entity.getComponent(PlaneShape).visible = true
             entity.remove_entity.getComponent(PlaneShape).visible = true
         }
-        this.working = false
+        stool_component.working = false
     }
 
     async addQuestion(entity: CompiNPC) {
@@ -712,12 +779,12 @@ export class CompiNPCSystem implements ISystem {
             engine.addEntity(entity.working_entity)
             await this.blockchain.addQuestion(stool_component.current_token, x.text, "Default answer").then(tx => {
                 //stool_component.dirty_compi = true
-                this.working = false
+                stool_component.working = false
                 engine.removeEntity(entity.working_entity)
                 engine.addEntity(entity.ok_entity)
                 log("addQuestion Ok ", tx)
             }).catch(e => {
-                this.working = false
+                stool_component.working = false
                 engine.removeEntity(entity.working_entity)
                 engine.addEntity(entity.error_entity)
                 log("Error on addQuestion", e)
@@ -734,12 +801,12 @@ export class CompiNPCSystem implements ISystem {
         engine.addEntity(entity.working_entity)
         await this.blockchain.removeQuestion(stool_component.current_token, questionText, questionId).then(tx => {
             //stool_component.dirty_compi = true
-            this.working = false
+            stool_component.working = false
             engine.removeEntity(entity.working_entity)
             engine.addEntity(entity.ok_entity)
             log("removeQuestion Ok ", tx)
         }).catch(e => {
-            this.working = false
+            stool_component.working = false
             engine.removeEntity(entity.working_entity)
             engine.addEntity(entity.error_entity)
             log("Error on removeQuestion", e)
@@ -761,17 +828,30 @@ export class CompiNPCSystem implements ISystem {
             engine.addEntity(entity.working_entity)
             await this.blockchain.addQuestion(stool_component.current_token, question, x.text).then(tx => {
                 //stool_component.dirty_compi = true
-                this.working = false
+                stool_component.working = false
                 engine.removeEntity(entity.working_entity)
                 engine.addEntity(entity.ok_entity)
                 log("addQuestion (Edit Anwser) Ok ", tx)
             }).catch(e => {
-                this.working = false
+                stool_component.working = false
                 engine.removeEntity(entity.working_entity)
                 engine.addEntity(entity.error_entity)
                 log("Error on addQuestion (Edit Anwser)", e)
             })
         })
+    }
+}
+
+
+function emote2id(emote: string) {
+    if (emote == "dance") {
+        return EMOTE.DANCE;
+    } else if (emote == "lol") {
+        return EMOTE.LOL;
+    } else if (emote == "alert") {
+        return EMOTE.ALERT;
+    } else {
+        return 0;
     }
 }
 
