@@ -340,6 +340,10 @@ export class CompiNPC extends Entity {
         e.setParent(this)
         return e
     }
+
+    destroy() {
+        engine.removeEntity(this)
+    }
 }
 
 
@@ -495,7 +499,6 @@ export class CompiNPCSystem implements ISystem {
         if(!stool_component.forced) {
             log("Getting compis")
             const compisCount = await this.blockchain.balanceOf()
-
             if (compisCount>0) {
                 if (stool_component.goto_compi<0) {
                     stool_component.current_compi = compisCount-1
@@ -504,7 +507,7 @@ export class CompiNPCSystem implements ISystem {
                     stool_component.current_compi = 0
                     stool_component.dirty_compi = true
                 }
-                stool_component.current_compi = stool_component.goto_compi
+                //stool_component.current_compi = stool_component.goto_compi
                 stool_component.dirty_compi = true
             } else {
                 stool_component.current_compi = -2
