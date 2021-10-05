@@ -195,6 +195,10 @@ export class Blockchain {
         })
     }
 
+    wei2human(wei: string) {
+        return eth.fromWei(wei, 'ether')
+    }
+
     async isWindowOpen() {
         return this.getFactory(
             this.minter_contract

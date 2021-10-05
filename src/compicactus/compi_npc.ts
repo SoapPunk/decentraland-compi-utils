@@ -75,6 +75,9 @@ export class CompiNPC extends Entity {
     questions_entity: Entity
     questions_shape: TextShape = new TextShape()
 
+    price_entity: Entity
+    price_shape: TextShape = new TextShape()
+
     arrowleftquestions_entity: Entity
     arrowrightquestions_entity: Entity
 
@@ -94,7 +97,9 @@ export class CompiNPC extends Entity {
 
     planesMenu: any
 
-    constructor(id: number, network: Blockchain) {
+    price: number
+
+    constructor(id: number, network: Blockchain, minter: boolean) {
         super()
         if (network.character == CHARACTER.COMPICACTUS) {
             this.planesMenu = compicactusPlanesMenu
@@ -103,6 +108,8 @@ export class CompiNPC extends Entity {
         }
 
         this.textInput = new UIInputText(canvas)
+
+        this.network = network
 
         this.stool_component = new StoolComponent()
         this.addComponent(this.stool_component)
@@ -211,7 +218,73 @@ export class CompiNPC extends Entity {
                     hoverText: "Waiting for signature. Check wallet!",
                 })
             )
+
+            const help_entity = this.createPlane(this.planesMenu.Help)
+            help_entity.addComponent(
+                new OnPointerDown(async ()=>{
+                    openExternalURL("https://compicactus.com/")
+                },
+                {
+                    hoverText: "Compi website",
+                })
+            );
+
+            if (minter) {
+                const mint_entity = this.createPlane(this.planesMenu.Mint)
+                mint_entity.addComponent(
+                    new OnPointerDown(async ()=>{
+                        const current_price = this.price
+                        log("price", current_price);
+
+                        await network.increaseAllowance(current_price[0]).then(tx => {
+                            log("IncreaseAllowance Ok ", tx)
+                            network.mintCompi(current_price[0]).then(tx => {
+                                log("Mint Ok ", tx)
+                            }).catch(e => {
+                                log("Error on mint", e)
+                                this.updatePrice()
+                            })
+                        }).catch(e => {
+                            log("Error on IncreaseAllowance", e)
+                        })
+                    },
+                    {
+                        hoverText: "Mint Compi",
+                    })
+                );
+                //mint_button.setParent(compi_core);
+            }
+            const polygonmana_entity = this.createPlane(this.planesMenu.PolygonMana)
+            polygonmana_entity.addComponent(
+                new OnPointerDown(async ()=>{
+                    openExternalURL("https://account.decentraland.org")
+                },
+                {
+                    hoverText: "Get PolygonMana",
+                })
+            );
+
+            // Price Text
+            this.price_shape.textWrapping = true
+            this.price_shape.font = new Font(Fonts.SanFrancisco_Heavy)
+            this.price_shape.hTextAlign = "center"
+            this.price_shape.vTextAlign = "top"
+            this.price_shape.fontSize = 2
+            this.price_shape.fontWeight = 'normal'
+            this.price_shape.value = "-"
+            this.price_shape.width = 1.5
+            this.price_shape.color = Color3.Black()
+            this.price_entity = new Entity()
+            this.price_entity.addComponent(this.price_shape)
+            this.price_entity.addComponent(new Transform({
+                position: new Vector3(0.5, 1.15+y_offset, 0.08),
+                rotation: Quaternion.Euler(0, 180, 0),
+                scale: new Vector3(0.5, 0.5, 1)
+            }))
+            this.price_entity.setParent(this)
+            this.updatePrice()
         }
+
         this.arrowleftquestions_entity = this.createPlane(this.planesMenu.ArrowLeftQuestions)
         this.arrowleftquestions_entity.addComponent(
             new OnPointerDown(() => {
@@ -347,6 +420,13 @@ export class CompiNPC extends Entity {
 
     destroy() {
         engine.removeEntity(this)
+    }
+
+    updatePrice() {
+        executeTask(async ()=>{
+            this.price = await this.network.getPrice()
+            this.price_shape.value = this.network.wei2human(this.price[0].toString())
+        })
     }
 }
 
@@ -656,6 +736,8 @@ export class CompiNPCSystem implements ISystem {
         for (let n=0; n < stool_component.question_list.length; n++) {
             if (stool_component.current_question == n) {
                 questions_text += "> "
+            } else {
+                questions_text += "  "
             }
             if (stool_component.question_list[n].value != "") {
                 questions_text += `- ${stool_component.question_list[n].value}\n`
