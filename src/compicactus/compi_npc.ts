@@ -33,6 +33,8 @@ export class StoolComponent {
     play_animation: number = -1
 
     answer: string = ""
+    answer_drawn: number = 0
+    answer_dt: number = 0
     questions: string = ""
     name: string = ""
 
@@ -306,6 +308,7 @@ export class CompiNPC extends Entity {
         const backgroundanswers_entity = this.createPlane(this.planesMenu.BackgroundAnswers)
         const backgroundcompicactus_entity = this.createPlane(this.planesMenu.BackgroundCompicactus)
         const backgroundquestions_entity = this.createPlane(this.planesMenu.BackgroundQuestions)
+
         const compiplaceholder_entity = this.createPlane(this.planesMenu.Compicactus)
         //const selectedquestions_entity = this.createPlane(planesMenu.SelectedQuestion)
         const name_entity = this.createPlane(this.planesMenu.Name)
@@ -332,6 +335,21 @@ export class CompiNPC extends Entity {
             })
         )
 
+        backgroundanswers_entity.addComponent(
+            new OnPointerDown((e) => {
+                if (e.buttonId == 0) {
+                    this.stool_component.current_action = "ask_question"
+                } else if (e.buttonId == 1) {
+                    this.stool_component.current_action = "previous_question"
+                } else if (e.buttonId == 2) {
+                    this.stool_component.current_action = "next_question"
+                }
+            },
+            {
+                hoverText: "E: Up - F: Down - Click: Ask",
+            })
+        )
+
         // Compi Data (id: name)
         this.compidata_shape.fontSize = 1
         this.compidata_shape.value = ""
@@ -342,7 +360,7 @@ export class CompiNPC extends Entity {
         this.compidata_entity = new Entity()
         this.compidata_entity.addComponent(this.compidata_shape)
         this.compidata_entity.addComponent(new Transform({
-            position: new Vector3(0.3, -0.78+y_offset+1.47, 0.08),
+            position: new Vector3(1.3, -0.78+y_offset+1.47, 0.08),
             rotation: Quaternion.Euler(0, 180, 0),
             scale: new Vector3(0.4, 0.4, 0.4)
         }))
@@ -361,7 +379,7 @@ export class CompiNPC extends Entity {
         this.questions_entity = new Entity()
         this.questions_entity.addComponent(this.questions_shape)
         this.questions_entity.addComponent(new Transform({
-            position: new Vector3(1.1, 0.1+y_offset, 0.08),
+            position: new Vector3(1.1-2.1, 0.19+y_offset, 0.08),
             rotation: Quaternion.Euler(0, 180, 0),
             scale: new Vector3(0.5, 0.5, 1)
         }))
@@ -376,12 +394,12 @@ export class CompiNPC extends Entity {
         this.answer_shape.fontSize = 1
         this.answer_shape.fontWeight = 'normal'
         this.answer_shape.value = ""
-        this.answer_shape.width = 1.5
+        this.answer_shape.width = 1.3
         this.answer_shape.color = Color3.Black()
         this.answer_entity = new Entity()
         this.answer_entity.addComponent(this.answer_shape)
         this.answer_entity.addComponent(new Transform({
-            position: new Vector3(-1, 0.1+y_offset, 0.08),
+            position: new Vector3(0, 0.1+y_offset, 0.08),
             rotation: Quaternion.Euler(0, 180, 0),
             scale: new Vector3(0.5, 0.5, 1)
         }))
@@ -452,9 +470,12 @@ export class CompiNPCSystem implements ISystem {
             let stool = entity as CompiNPC
             const stool_component = entity.getComponent(StoolComponent)
 
-            if (stool_component.answer != stool.answer_shape.value) {
-                stool.answer_shape.value = stool_component.answer
-                stool.answer_shape.width = 1.2
+            if (stool_component.answer_drawn < stool_component.answer.length) {
+                stool_component.answer_drawn += Math.round(100 * dt)
+                if (stool_component.answer_drawn > stool_component.answer.length) {
+                    stool_component.answer_drawn = stool_component.answer.length
+                }
+                stool.answer_shape.value = stool_component.answer.substring(0, stool_component.answer_drawn)
             }
             if (stool_component.questions != stool.questions_shape.value) {
                 stool.questions_shape.value = stool_component.questions
@@ -734,14 +755,19 @@ export class CompiNPCSystem implements ISystem {
         let questions_text = ""
         let questions_count: number = 0
         for (let n=0; n < stool_component.question_list.length; n++) {
-            if (stool_component.current_question == n) {
-                questions_text += "> "
-            } else {
-                questions_text += "  "
-            }
             if (stool_component.question_list[n].value != "") {
-                questions_text += `- ${stool_component.question_list[n].value}\n`
+                if (stool_component.current_question == n) {
+                    questions_text += "[ "
+                } else {
+                    questions_text += ""
+                }
+                questions_text += `${stool_component.question_list[n].value}`
                 questions_count += 1
+                if (stool_component.current_question == n) {
+                    questions_text += " ]\n"
+                } else {
+                    questions_text += "\n"
+                }
             }
         }
         stool_component.questions = questions_text
@@ -790,11 +816,8 @@ export class CompiNPCSystem implements ISystem {
         const question_text = stool_component.question_list[stool_component.current_question].value
         const answer = await this.blockchain.getAnswer(stool_component.current_token, question_text)
         log(answer)
-        //const regex = /(^.*?)(\{.*\})$/gm;
-        //const regex = /(^.*?)(\{.*\})?$/;
         const regex = /\{.*?\}/g;
 
-        //let matches = [];
         let m;
         let clean_answer = answer;
         while ((m = regex.exec(answer)) !== null) {
@@ -819,9 +842,10 @@ export class CompiNPCSystem implements ISystem {
                 clean_answer = clean_answer.replace(match, "");
             });
         }
-        log("stool_component.broadcast", stool_component.broadcast)
+        //log("stool_component.broadcast", stool_component.broadcast)
         const answer_text = `You: ${question_text}\n\nCompi: ${clean_answer}`
         stool_component.answer = answer_text
+        stool_component.answer_drawn = 0
         const clip_id = Math.floor(Math.random()*3)
         let animate = false
         for (let n=0; n<stool_component.broadcast.length; n++) {
@@ -830,6 +854,16 @@ export class CompiNPCSystem implements ISystem {
                 stool_component.broadcast[n].emote = undefined
                 animate = true
             }
+
+            if (stool_component.broadcast[n].audio != undefined) {
+                const stream = new AudioStream(
+                    stool_component.broadcast[n].audio
+                )
+                entity.addComponentOrReplace(stream)
+                stream.playing = true
+                stool_component.broadcast[n].audio = undefined
+            }
+
             /* This don't work for security reasons
             if (stool_component.broadcast[n].open_url != undefined) {
                 openExternalURL(""+stool_component.broadcast[n].open_url)
@@ -932,427 +966,25 @@ function emote2id(emote: string) {
         return EMOTE.LOL;
     } else if (emote == "alert") {
         return EMOTE.ALERT;
+    } else if (emote == "swing") {
+        return EMOTE.SWING;
+    } else if (emote == "look_l") {
+        return EMOTE.LOOK_L;
+    } else if (emote == "look_r") {
+        return EMOTE.LOOK_R;
+    } else if (emote == "look_r_l") {
+        return EMOTE.LOOK_R_L;
+    } else if (emote == "look_up") {
+        return EMOTE.LOOK_UP;
+    } else if (emote == "pissed_off") {
+        return EMOTE.PISSED_OFF;
+    } else if (emote == "sigh") {
+        return EMOTE.SIGH;
+    } else if (emote == "sleep") {
+        return EMOTE.SLEEP;
+    } else if (emote == "yawn") {
+        return EMOTE.YAWN;
     } else {
         return 0;
     }
 }
-
-
-/*
-//Menu Shapes
-const menu_mint_shape = new GLTFShape("models/menu_mint.gltf")
-const menu_chat_shape = new GLTFShape("models/menu_chat.gltf")
-const menu_teach_shape = new GLTFShape("models/menu_teach.gltf")
-const menu_photo_shape = new GLTFShape("models/menu_photo.gltf")
-const menu_sell_shape = new GLTFShape("models/menu_sell.gltf")
-
-// const stool_shape = new GLTFShape("models/stool.gltf")
-
-const sell_cargo_shape = new GLTFShape("models/sell_cargo.gltf")
-const sell_opensea_shape = new GLTFShape("models/sell_opensea.gltf")
-
-// const left_shape = new GLTFShape("models/left.gltf")
-// const right_shape = new GLTFShape("models/right.gltf")
-const compidata_shape = new TextShape()
-const answer_shape = new TextShape()
-
-const blockchain = new Blockchain("mumbai")
-
-@Component("stool")
-export class StoolComponent {
-    //spinning: boolean
-    //speed: number
-}
-
-export class Stool extends Entity {
-    // Menu entities
-    menu_mint_entity: Entity = new Entity
-    menu_chat_entity: Entity = new Entity
-    menu_teach_entity: Entity = new Entity
-    menu_photo_entity: Entity = new Entity
-    menu_sell_entity: Entity = new Entity
-    compi_entity: Compicactus
-    menu_background_entity: Entity = new Entity
-
-    sell_cargo_entity: Entity = new Entity
-    sell_opensea_entity: Entity = new Entity
-
-    left_entity: Entity = new Entity
-    right_entity: Entity = new Entity
-    up_entity: Entity = new Entity
-    down_entity: Entity = new Entity
-
-    compidata_entity: Entity = new Entity
-    answer_entity: Entity = new Entity
-
-    current_compi: number = -1
-    current_token: number = -1
-    current_menu: number = 0
-
-    mint: Mint
-    teach: Teach
-
-    //compi_actions: Array<string>
-
-    constructor() {
-        super()
-
-        //this.addComponent(stool_shape)
-        this.addComponent(new Transform({
-            position: new Vector3(8, 0, 8)
-        }))
-        this.addComponent(new Billboard(false, true ,false))
-        this.addComponent(new StoolComponent())
-        engine.addEntity(this)
-
-        this.mint = new Mint(this)
-
-        this.teach = new Teach(this)
-
-        this.setupSell()
-
-        // Left
-        this.left_entity.addComponent(new GLTFShape("models/button_arrow.gltf"))
-        this.left_entity.addComponent(new Transform({
-            position: new Vector3(0.5, 1.5+0.2, 0),
-            rotation: Quaternion.Euler(0, 0, 180)
-        }))
-        this.left_entity.setParent(this)
-        engine.addEntity(this.left_entity)
-        this.left_entity.addComponent(
-            new OnPointerDown(()=>{this.previous(this)},
-            {
-                hoverText: "Previous",
-            })
-        )
-
-        // Right
-        this.right_entity.addComponent(new GLTFShape("models/button_arrow.gltf"))
-        this.right_entity.addComponent(new Transform({
-            position: new Vector3(-0.5, 1.5+0.2, 0)
-        }))
-        this.right_entity.setParent(this)
-        engine.addEntity(this.right_entity)
-        this.right_entity.addComponent(
-            new OnPointerDown(()=>{this.next(this)},
-            {
-                hoverText: "Next",
-            })
-        )
-
-        // Up
-        this.up_entity.addComponent(new GLTFShape("models/button_arrow.gltf"))
-        this.up_entity.addComponent(new Transform({
-            position: new Vector3(-0.15, 1.2+0.2, 0),
-            rotation: Quaternion.Euler(0, 0, -90)
-        }))
-        this.up_entity.setParent(this)
-        engine.addEntity(this.up_entity)
-        this.up_entity.addComponent(
-            new OnPointerDown(()=>{this.next(this)},
-            {
-                hoverText: "Up",
-            })
-        )
-
-        // Down
-        this.down_entity.addComponent(new GLTFShape("models/button_arrow.gltf"))
-        this.down_entity.addComponent(new Transform({
-            position: new Vector3(0.15, 1.2+0.2, 0),
-            rotation: Quaternion.Euler(0, 0, 90)
-        }))
-        this.down_entity.setParent(this)
-        engine.addEntity(this.down_entity)
-        this.down_entity.addComponent(
-            new OnPointerDown(()=>{this.next(this)},
-            {
-                hoverText: "Down",
-            })
-        )
-
-
-        this.menu_background_entity.addComponent(new PlaneShape())
-        this.menu_background_entity.addComponent(new Transform({
-            position: new Vector3(0, 1.2+0.1, -.2),
-            scale: new Vector3(2, 2.5, 1)
-        }))
-        const backgroundMaterial = new BasicMaterial()
-        backgroundMaterial.texture = new Texture("textures/background.jpg")
-        this.menu_background_entity.addComponent(backgroundMaterial)
-        this.menu_background_entity.setParent(this)
-
-        this.compi_entity = new Compicactus()
-        this.compi_entity.addComponent(new Transform({
-            position: new Vector3(0, 1.3+0.2, -0.1),
-            scale: new Vector3(0.8, 0.8, 0.8)
-        }))
-        this.compi_entity.setParent(this)
-
-        compidata_shape.fontSize = 1
-        compidata_shape.value = "-"
-        compidata_shape.hTextAlign = "center"
-        compidata_shape.vTextAlign = "top"
-        compidata_shape.font = new Font(Fonts.SanFrancisco_Heavy)
-        compidata_shape.color = Color3.Black()
-        this.compidata_entity.addComponent(compidata_shape)
-        this.compidata_entity.addComponent(new Transform({
-            position: new Vector3(0, 2.2+0.2, 0),
-            rotation: Quaternion.Euler(0, 180, 0)
-        }))
-        this.compidata_entity.setParent(this)
-        engine.addEntity(this.compidata_entity)
-
-        answer_shape.textWrapping = true
-        answer_shape.font = new Font(Fonts.SanFrancisco_Heavy)
-        answer_shape.hTextAlign = "center"
-        answer_shape.vTextAlign = "top"
-        answer_shape.fontSize = 1
-        answer_shape.fontWeight = 'normal'
-        // answer_shape.value = "-"
-
-        answer_shape.color = Color3.Black()
-        //answer_shape.outlineColor = Color3.White()
-        //answer_shape.outlineWidth = .1
-        this.answer_entity.addComponent(answer_shape)
-        this.answer_entity.addComponent(new Transform({
-            position: new Vector3(0, 0.8, 0),
-            rotation: Quaternion.Euler(0, 180, 0)
-        }))
-        this.answer_entity.setParent(this)
-        engine.addEntity(this.answer_entity)
-
-        this.setupMenu()
-
-        this.ownsCompi()
-
-        this.setAnswer("This is a test fsdf sdfdf sdfsdf sdfsdf sdfsdf asadsd asdasd asdasd asdasdasd asdasdasd asdasdad asdasdasd asdasdsd asdasdasd")
-    }
-
-    setAnswer(text: string){
-        answer_shape.value = text
-        answer_shape.width = 1.5
-    }
-
-    setupSell() {
-
-        sell_cargo_shape.visible = false
-        this.sell_cargo_entity.addComponent(sell_cargo_shape)
-        this.sell_cargo_entity.addComponent(new Transform())
-        this.sell_cargo_entity.setParent(this)
-        engine.addEntity(this.sell_cargo_entity)
-        this.sell_cargo_entity.addComponent(
-            new OnPointerDown(() => {
-                openExternalURL("https://app.cargo.build")
-            },
-            {
-                hoverText: "Go to Cargo",
-            })
-        )
-
-        sell_opensea_shape.visible = false
-        this.sell_opensea_entity.addComponent(sell_opensea_shape)
-        this.sell_opensea_entity.addComponent(new Transform())
-        this.sell_opensea_entity.setParent(this)
-        engine.addEntity(this.sell_opensea_entity)
-        this.sell_opensea_entity.addComponent(
-            new OnPointerDown(() => {
-                openExternalURL("https://opensea.io/")
-            },
-            {
-                hoverText: "Go to OpenSea",
-            })
-        )
-
-    }
-
-    setupMenu() {
-        this.menu_mint_entity.addComponent(menu_mint_shape)
-        this.menu_mint_entity.addComponent(new Transform({
-            position: new Vector3(0, 0.5, 0)
-        }))
-        this.menu_mint_entity.setParent(this)
-        engine.addEntity(this.menu_mint_entity)
-        this.menu_mint_entity.addComponent(
-            new OnPointerDown(() => {
-                this.current_menu = 0
-                this.updateMenu()
-            },
-            {
-                hoverText: "Mint new Compi",
-            })
-        )
-
-        this.menu_chat_entity.addComponent(menu_chat_shape)
-        this.menu_chat_entity.addComponent(new Transform({
-            position: new Vector3(0, 0.5, 0)
-        }))
-        this.menu_chat_entity.setParent(this)
-        engine.addEntity(this.menu_chat_entity)
-        this.menu_chat_entity.addComponent(
-            new OnPointerDown(() => {
-                this.current_menu = 1
-                this.updateMenu()
-            },
-            {
-                hoverText: "Chat with Compi",
-            })
-        )
-
-        this.menu_teach_entity.addComponent(menu_teach_shape)
-        this.menu_teach_entity.addComponent(new Transform({
-            position: new Vector3(0, 0.5, 0)
-        }))
-        this.menu_teach_entity.setParent(this)
-        engine.addEntity(this.menu_teach_entity)
-        this.menu_teach_entity.addComponent(
-            new OnPointerDown(() => {
-                this.current_menu = 2
-                this.updateMenu()
-            },
-            {
-                hoverText: "Teach your Compi",
-            })
-        )
-
-        this.menu_photo_entity.addComponent(menu_photo_shape)
-        this.menu_photo_entity.addComponent(new Transform({
-            position: new Vector3(0, 0.5, 0)
-        }))
-        this.menu_photo_entity.setParent(this)
-        engine.addEntity(this.menu_photo_entity)
-        this.menu_photo_entity.addComponent(
-            new OnPointerDown(() => {
-                this.current_menu = 3
-                this.updateMenu()
-            },
-            {
-                hoverText: "Photo mode",
-            })
-        )
-
-        this.menu_sell_entity.addComponent(menu_sell_shape)
-        this.menu_sell_entity.addComponent(new Transform({
-            position: new Vector3(0, 0.5, 0)
-        }))
-        this.menu_sell_entity.setParent(this)
-        engine.addEntity(this.menu_sell_entity)
-        this.menu_sell_entity.addComponent(
-            new OnPointerDown(() => {
-                this.current_menu = 4
-                this.updateMenu()
-            },
-            {
-                hoverText: "Sell Compi",
-            })
-        )
-    }
-
-    updateMenu(){
-        // Hide all
-        this.mint.deactivate()
-
-        sell_cargo_shape.visible = false
-        sell_opensea_shape.visible = false
-
-        this.teach.deactivate()
-
-        //Show all
-        menu_mint_shape.visible = true
-        menu_chat_shape.visible = true
-        menu_teach_shape.visible = true
-        menu_photo_shape.visible = true
-        menu_sell_shape.visible = true
-
-        if (this.current_menu==0) {  // Mint
-            this.mint.activate()
-
-            this.mint.updatePrice()
-
-        } else if (this.current_menu==1) {  // Chat
-            //
-        } else if (this.current_menu==2) {  // Teach
-            this.teach.activate()
-        } else if (this.current_menu==3) {  // Photo
-            //menu_mint_shape.visible = false
-            menu_chat_shape.visible = false
-            menu_teach_shape.visible = false
-            menu_photo_shape.visible = false
-            menu_sell_shape.visible = false
-        } else if (this.current_menu==4) {  // Sell
-            sell_cargo_shape.visible = true
-            sell_opensea_shape.visible = true
-        }
-    }
-
-    previous(self:any) {
-        self.goto(false)
-    }
-
-    next(self:any) {
-        self.goto(true)
-    }
-
-    async goto(next=true) {
-        log("Getting compis")
-
-        const compisCount = await blockchain.balanceOf()
-
-        if (compisCount>0) {
-            if (next) {
-                this.current_compi += 1
-            } else {
-                this.current_compi -= 1
-            }
-
-            if (this.current_compi<0) {
-                this.current_compi = compisCount
-            } else if (this.current_compi>=compisCount) {
-                this.current_compi = 0
-            }
-
-            this.updateCompi()
-        }
-
-        log(this.current_compi)
-    }
-
-    async ownsCompi() {
-        const compisCount = await blockchain.balanceOf()
-
-        if (compisCount>0) {
-
-            this.current_compi = 0
-
-            this.updateCompi()
-        }
-
-
-    }
-
-    async updateCompi() {
-        compidata_shape.value = "-"
-
-        const compiId = await blockchain.tokenOfOwnerByIndex(this.current_compi)
-
-        this.current_token = compiId
-
-        const compiName = await blockchain.getName(compiId)
-
-        compidata_shape.value = compiId + ":" + compiName
-
-        this.teach.getQuestions()
-
-        this.compi_entity.set_mp4_body(this.current_compi)
-    }
-}
-const stoolGroup = engine.getComponentGroup(StoolComponent)
-
-export class StoolSystem implements ISystem {
-    update(dt: number) {
-        for (let entity of stoolGroup.entities) {
-
-        }
-    }
-}
-
-*/

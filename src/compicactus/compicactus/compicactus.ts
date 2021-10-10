@@ -1,5 +1,5 @@
 import { fetchRetry } from '../common'
-import planesMenu from "./planesMenuB"
+import planesMenu from "./planesMenuC"
 
 export {planesMenu}
 
