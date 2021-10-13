@@ -1,6 +1,6 @@
 //import { getUserAccount } from '@decentraland/EthereumController'
 import { getUserPublicKey } from "@decentraland/Identity"
-import { getProvider } from "@decentraland/web3-provider";
+import { getProvider } from "@decentraland/web3-provider"
 import { sleep } from "../common"
 import {
   //ContractName,
@@ -32,7 +32,7 @@ export class Blockchain {
         if (network != NETWORK.MUMBAI && network != NETWORK.MATIC && network != NETWORK.MOCKUP) {
             throw new Error(`Network not found: ${network}`)
         }
-        if (character != CHARACTER.COMPICACTUS) {
+        if (character != CHARACTER.COMPICACTUS && character != CHARACTER.VOXTER) {
             throw new Error(`Character not found: ${character}`)
         }
 
@@ -75,6 +75,17 @@ export class Blockchain {
                 mumbai: {
                     address: '0xcF904EeCa0dC1d99E6c4Be05f6C9a733041Ce093',
                     name: 'CompiPFP'
+                }
+            }
+        } else if (character == CHARACTER.VOXTER) {
+            pfp_contract = {
+                matic: {
+                    address: '0x764e5a8c9ca14b456f5afbf31bfb2fa7f1e002b6',
+                    name: 'Voxters'
+                },
+                mumbai: {
+                    address: '',
+                    name: ''
                 }
             }
         }
@@ -133,7 +144,8 @@ export class Blockchain {
                 matic: {
                     version: '1',
                     abi: abiBrain,
-                    address: '0x64406Be782d00E497ae1CdDFaB1bE1AA2787F02C',
+                    //address: '0x64406Be782d00E497ae1CdDFaB1bE1AA2787F02C',
+                    address: '0x89e2558091D28290B834ddd42e59E2b72D07Fe0B',
                     name: 'CompiBrain',
                     chainId: 137
                 },
@@ -179,6 +191,18 @@ export class Blockchain {
         return contract
     }
 
+    async waitTX(tx) {
+        const requestManager: any = new eth.RequestManager(this.provider);
+
+        let receipt = null
+        while (receipt == null) {
+            //await delay(2000)
+            sleep(2000)
+            receipt = await requestManager.eth_getTransactionReceipt(tx.toString())
+        }
+        return receipt
+    }
+
     // Functions
 
     // Minter
@@ -211,7 +235,11 @@ export class Blockchain {
         const functionMintCompi = new eth.SolidityFunction(this.getFunction("mintCompi", abiMinter));
         const functionSignature = functionMintCompi.toPayload([maxPrice]);
         log(functionSignature)
-        return this.prepareMetaTransaction(functionSignature, this.minter_contract).then().catch()
+        //return this.prepareMetaTransaction(functionSignature, this.minter_contract).then().catch()
+        return this.prepareMetaTransaction(functionSignature, this.minter_contract).then(async (tx) => {
+            log("increaseAllowance TX ", tx)
+            return this.waitTX(tx)
+        }).then().catch()
     }
 
     // Mana
@@ -230,7 +258,11 @@ export class Blockchain {
         //const amountValue = eth.toWei(amount, 'ether')
         const functionSignature = functionApprove.toPayload([this.minter_contract.address, amount]);
         log(functionSignature)
-        return this.prepareMetaTransaction(functionSignature, this.mana_contract).then().catch()
+        //return this.prepareMetaTransaction(functionSignature, this.mana_contract).then().catch()
+        return this.prepareMetaTransaction(functionSignature, this.mana_contract).then(async (tx) => {
+            log("increaseAllowance TX ", tx)
+            return this.waitTX(tx)
+        }).then().catch()
     }
 
     // PFP
@@ -285,7 +317,11 @@ export class Blockchain {
         const functionSetName = new eth.SolidityFunction(this.getFunction("setName", abiBrain));
         const functionSignature = functionSetName.toPayload([this.pfp_contract.address, id, name]);
         log(functionSignature)
-        return this.prepareMetaTransaction(functionSignature, this.brain_contract).then().catch()
+        //return this.prepareMetaTransaction(functionSignature, this.brain_contract).then().catch()
+        return this.prepareMetaTransaction(functionSignature, this.brain_contract).then(async (tx) => {
+            log("setName TX ", tx)
+            return this.waitTX(tx)
+        }).then().catch()
     }
 
     async addQuestion(id:number, question:string, answer:string) {
@@ -294,7 +330,11 @@ export class Blockchain {
         const functionAddQuestion = new eth.SolidityFunction(this.getFunction("addQuestion", abiBrain));
         const functionSignature = functionAddQuestion.toPayload([this.pfp_contract.address, id, scene, question, answer]);
         log(functionSignature)
-        return this.prepareMetaTransaction(functionSignature, this.brain_contract).then().catch()
+        //return this.prepareMetaTransaction(functionSignature, this.brain_contract).then().catch()
+        return this.prepareMetaTransaction(functionSignature, this.brain_contract).then(async (tx) => {
+            log("addQuestion TX ", tx)
+            return this.waitTX(tx)
+        }).then().catch()
     }
 
     async removeQuestion(id:number, question:string, questionId:number) {
@@ -306,7 +346,11 @@ export class Blockchain {
         const functionRemoveQuestion = new eth.SolidityFunction(this.getFunction("removeQuestion", abiBrain));
         const functionSignature = functionRemoveQuestion.toPayload([this.pfp_contract.address, id, scene, question, questionId]);
         log(functionSignature)
-        return this.prepareMetaTransaction(functionSignature, this.brain_contract).then().catch()
+        //return this.prepareMetaTransaction(functionSignature, this.brain_contract).then().catch()
+        return this.prepareMetaTransaction(functionSignature, this.brain_contract).then(async (tx) => {
+            log("removeQuestion TX ", tx)
+            return this.waitTX(tx)
+        }).then().catch()
     }
 
     async getAnswer(id:number, question:string) {

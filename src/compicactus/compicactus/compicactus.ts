@@ -154,6 +154,8 @@ export class Compicactus extends Entity {
 
     plane_material: BasicMaterial
 
+    character_name: string = "Compi"
+
     constructor(){
         super()
 
@@ -184,11 +186,11 @@ export class Compicactus extends Entity {
             clip.looping = false
         }*/
         const clip_id = Math.floor(Math.random()*compi_actions.length)
-        this.set_mp4_body(this.current_compi, clip_id, false)
+        this.set_body(this.current_compi, clip_id, false)
     }
 
     play(clip_id: number) {
-        this.set_mp4_body(this.current_compi, clip_id, false)
+        this.set_body(this.current_compi, clip_id, false)
     }
 
     remove_elements() {
@@ -197,7 +199,7 @@ export class Compicactus extends Entity {
         }
     }
 
-    async set_mp4_body(id: number, animation: number, reset_material: boolean) {
+    async set_body(id: number, animation: number, reset_material: boolean) {
         log("set mp4 body")
         this.current_compi = id
 
@@ -216,7 +218,7 @@ export class Compicactus extends Entity {
         myVideoTexture.playing = true
     }
 
-    async set_body(id: number) {
+    async set_body_(id: number) {
         log("set body")
         this.remove_elements()
 

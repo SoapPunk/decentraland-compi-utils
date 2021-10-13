@@ -2,6 +2,7 @@ import { Blockchain } from "./contracts/contracts"
 // import { Mint } from "./mint"
 // import { Teach } from "./teach"
 import { Compicactus, planesMenu as compicactusPlanesMenu } from "./compicactus/compicactus"
+import { Voxters, planesMenu as voxtersPlanesMenu } from "./voxters/voxters"
 
 import { CHARACTER, EMOTE } from "./constants"
 
@@ -62,11 +63,13 @@ export class StoolComponent {
     broadcast: Array<any> = []
 
     working: boolean = false
+
+    network: Blockchain
 }
 
 export class CompiNPC extends Entity {
 
-    compi_entity: Compicactus
+    compi_entity: Compicactus|Voxters
 
     compidata_entity: Entity
     compidata_shape: TextShape = new TextShape()
@@ -95,7 +98,7 @@ export class CompiNPC extends Entity {
 
     textInput:UIInputText
 
-    network: Blockchain
+    //network: Blockchain
 
     planesMenu: any
 
@@ -105,17 +108,21 @@ export class CompiNPC extends Entity {
         super()
         if (network.character == CHARACTER.COMPICACTUS) {
             this.planesMenu = compicactusPlanesMenu
+            this.compi_entity = new Compicactus()
+        } else if (network.character == CHARACTER.VOXTER) {
+            this.planesMenu = voxtersPlanesMenu
+            this.compi_entity = new Voxters()
         } else {
             throw new Error(`Character not found: ${network.character}`)
         }
 
         this.textInput = new UIInputText(canvas)
 
-        this.network = network
-
         this.stool_component = new StoolComponent()
         this.addComponent(this.stool_component)
         engine.addEntity(this)
+
+        this.stool_component.network = network
 
         if (id != -1) {
             this.stool_component.forced = true
@@ -132,7 +139,7 @@ export class CompiNPC extends Entity {
                     this.stool_component.current_action = "previous_compi"
                 },
                 {
-                    hoverText: "Previous Compi"
+                    hoverText: `Previous ${this.compi_entity.character_name}`
                 })
             )
             const arrowrightcompi_entity = this.createPlane(this.planesMenu.ArrowRightCompi)
@@ -141,7 +148,7 @@ export class CompiNPC extends Entity {
                     this.stool_component.current_action = "next_compi"
                 },
                 {
-                    hoverText: "Next Compi"
+                    hoverText: `Next ${this.compi_entity.character_name}`
                 })
             )
             const addquestion_entity = this.createPlane(this.planesMenu.Add)
@@ -238,14 +245,23 @@ export class CompiNPC extends Entity {
                         const current_price = this.price
                         log("price", current_price);
 
-                        await network.increaseAllowance(current_price[0]).then(tx => {
-                            log("IncreaseAllowance Ok ", tx)
-                            network.mintCompi(current_price[0]).then(tx => {
-                                log("Mint Ok ", tx)
-                            }).catch(e => {
-                                log("Error on mint", e)
-                                this.updatePrice()
-                            })
+                        await network.increaseAllowance(current_price[0]).then(receipt => {
+                            if (receipt.status === 1) {
+                                log("IncreaseAllowance Ok ", receipt)
+                                network.mintCompi(current_price[0]).then(receipt => {
+                                    if (receipt.status === 1) {
+                                        log("Mint Ok ", receipt)
+                                    } else {
+                                        log("Error on mint", receipt)
+                                        this.updatePrice()
+                                    }
+                                }).catch(e => {
+                                    log("Error on mint", e)
+                                    this.updatePrice()
+                                })
+                            } else {
+                                log("Error on IncreaseAllowance", receipt)
+                            }
                         }).catch(e => {
                             log("Error on IncreaseAllowance", e)
                         })
@@ -315,7 +331,6 @@ export class CompiNPC extends Entity {
 
         // Compicactus
         engine.removeEntity(compiplaceholder_entity)
-        this.compi_entity = new Compicactus()
         this.compi_entity.addComponent(compiplaceholder_entity.getComponent(Transform))
         this.compi_entity.setParent(this)
         this.compi_entity.getComponent(PlaneShape).uvs = compiplaceholder_entity.getComponent(PlaneShape).uvs
@@ -442,8 +457,8 @@ export class CompiNPC extends Entity {
 
     updatePrice() {
         executeTask(async ()=>{
-            this.price = await this.network.getPrice()
-            this.price_shape.value = this.network.wei2human(this.price[0].toString())
+            this.price = await this.stool_component.network.getPrice()
+            this.price_shape.value = this.stool_component.network.wei2human(this.price[0].toString())
         })
     }
 }
@@ -459,11 +474,11 @@ const stoolGroup = engine.getComponentGroup(StoolComponent)
 
 export class CompiNPCSystem implements ISystem {
     //working: boolean = false
-    blockchain: Blockchain
+    /*blockchain: Blockchain
 
     constructor(network: Blockchain) {
         this.blockchain = network
-    }
+    }*/
 
     update(dt: number) {
         for (let entity of stoolGroup.entities) {
@@ -605,7 +620,7 @@ export class CompiNPCSystem implements ISystem {
         log("stool_component.dirty_compi", stool_component.dirty_compi)
         if(!stool_component.forced) {
             log("Getting compis")
-            const compisCount = await this.blockchain.balanceOf()
+            const compisCount = await stool_component.network.balanceOf()
             log("compisCount", compisCount)
             if (compisCount>0) {
                 log("compisCount>0")
@@ -682,7 +697,7 @@ export class CompiNPCSystem implements ISystem {
 
         log("current_qpage", stool_component.current_qpage)
         const offset = stool_component.current_qpage * 10
-        const questions = await this.blockchain.getQuestions(stool_component.current_token, offset)
+        const questions = await stool_component.network.getQuestions(stool_component.current_token, offset)
         log(questions)
 
         for (let n=0; n < questions.length; n++) {
@@ -713,18 +728,18 @@ export class CompiNPCSystem implements ISystem {
             entity.editanswer_entity.getComponent(PlaneShape).visible = false
             entity.remove_entity.getComponent(PlaneShape).visible = false
 
-            compiId = await this.blockchain.tokenOfOwnerByIndex(stool_component.current_compi)
+            compiId = await stool_component.network.tokenOfOwnerByIndex(stool_component.current_compi)
 
             stool_component.current_token = compiId
         } else {
             compiId = stool_component.current_token = stool_component.current_compi
         }
         log("compiId", compiId)
-        const compiName = await this.blockchain.getName(compiId)
+        const compiName = await stool_component.network.getName(compiId)
 
         entity.compidata_shape.value = `#${compiId}:${compiName}`
 
-        entity.compi_entity.set_mp4_body(compiId, 0, true)
+        entity.compi_entity.set_body(compiId, 0, true)
 
         // Get questions
 
@@ -735,7 +750,7 @@ export class CompiNPCSystem implements ISystem {
 
     async updateQuestions(entity: CompiNPC) {
         const stool_component = entity.getComponent(StoolComponent)
-        const questionCount = await this.blockchain.getQuestionsCount(stool_component.current_token)
+        const questionCount = await stool_component.network.getQuestionsCount(stool_component.current_token)
 
         entity.arrowleftquestions_entity.getComponent(PlaneShape).visible = true
         entity.arrowrightquestions_entity.getComponent(PlaneShape).visible = true
@@ -793,12 +808,20 @@ export class CompiNPCSystem implements ISystem {
             entity.textInput.visible = false
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await this.blockchain.setName(stool_component.current_token, x.text).then(tx => {
-                stool_component.dirty_compi = true
-                stool_component.working = false
-                engine.removeEntity(entity.working_entity)
-                engine.addEntity(entity.ok_entity)
-                log("setName Ok ", tx)
+            await stool_component.network.setName(stool_component.current_token, x.text).then(receipt => {
+                if (receipt.status === 1) {
+                    stool_component.dirty_compi = true
+                    stool_component.working = false
+                    engine.removeEntity(entity.working_entity)
+                    engine.addEntity(entity.ok_entity)
+                    log("setName Ok ", receipt)
+                } else {
+                    // TODO duplicated code
+                    stool_component.working = false
+                    engine.removeEntity(entity.working_entity)
+                    engine.addEntity(entity.error_entity)
+                    log("Error on setName", receipt)
+                }
             }).catch(e => {
                 stool_component.working = false
                 engine.removeEntity(entity.working_entity)
@@ -814,7 +837,7 @@ export class CompiNPCSystem implements ISystem {
     async askQuestion(entity: CompiNPC) {
         const stool_component = entity.getComponent(StoolComponent)
         const question_text = stool_component.question_list[stool_component.current_question].value
-        const answer = await this.blockchain.getAnswer(stool_component.current_token, question_text)
+        const answer = await stool_component.network.getAnswer(stool_component.current_token, question_text)
         log(answer)
         const regex = /\{.*?\}/g;
 
@@ -843,7 +866,7 @@ export class CompiNPCSystem implements ISystem {
             });
         }
         //log("stool_component.broadcast", stool_component.broadcast)
-        const answer_text = `You: ${question_text}\n\nCompi: ${clean_answer}`
+        const answer_text = `You: ${question_text}\n\n${entity.compi_entity.character_name}: ${clean_answer}`
         stool_component.answer = answer_text
         stool_component.answer_drawn = 0
         const clip_id = Math.floor(Math.random()*3)
@@ -861,6 +884,7 @@ export class CompiNPCSystem implements ISystem {
                 )
                 entity.addComponentOrReplace(stream)
                 stream.playing = true
+                stream.volume = 0.2
                 stool_component.broadcast[n].audio = undefined
             }
 
@@ -893,12 +917,20 @@ export class CompiNPCSystem implements ISystem {
             entity.textInput.visible = false
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await this.blockchain.addQuestion(stool_component.current_token, x.text, "Default answer").then(tx => {
-                //stool_component.dirty_compi = true
-                stool_component.working = false
-                engine.removeEntity(entity.working_entity)
-                engine.addEntity(entity.ok_entity)
-                log("addQuestion Ok ", tx)
+            await stool_component.network.addQuestion(stool_component.current_token, x.text, "Default answer").then(receipt => {
+                if (receipt.status === 1) {
+                    stool_component.dirty_compi = true
+                    stool_component.working = false
+                    engine.removeEntity(entity.working_entity)
+                    engine.addEntity(entity.ok_entity)
+                    log("addQuestion Ok ", receipt)
+                } else {
+                    // TODO duplicated code
+                    stool_component.working = false
+                    engine.removeEntity(entity.working_entity)
+                    engine.addEntity(entity.error_entity)
+                    log("Error on addQuestion", receipt)
+                }
             }).catch(e => {
                 stool_component.working = false
                 engine.removeEntity(entity.working_entity)
@@ -915,12 +947,25 @@ export class CompiNPCSystem implements ISystem {
         const questionText = stool_component.question_list[stool_component.current_question].value
         const questionId = stool_component.question_list[stool_component.current_question].id
         engine.addEntity(entity.working_entity)
-        await this.blockchain.removeQuestion(stool_component.current_token, questionText, questionId).then(tx => {
-            //stool_component.dirty_compi = true
+        await stool_component.network.removeQuestion(stool_component.current_token, questionText, questionId).then(receipt => {
+            if (receipt.status === 1) {
+                stool_component.dirty_compi = true
+                stool_component.working = false
+                engine.removeEntity(entity.working_entity)
+                engine.addEntity(entity.ok_entity)
+                log("removeQuestion Ok ", receipt)
+            } else {
+                // TODO duplicated code
+                stool_component.working = false
+                engine.removeEntity(entity.working_entity)
+                engine.addEntity(entity.error_entity)
+                log("Error on removeQuestion", receipt)
+            }
+            /*//stool_component.dirty_compi = true
             stool_component.working = false
             engine.removeEntity(entity.working_entity)
             engine.addEntity(entity.ok_entity)
-            log("removeQuestion Ok ", tx)
+            log("removeQuestion Ok ", tx)*/
         }).catch(e => {
             stool_component.working = false
             engine.removeEntity(entity.working_entity)
@@ -942,12 +987,25 @@ export class CompiNPCSystem implements ISystem {
             const question = stool_component.question_list[stool_component.current_question].value
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await this.blockchain.addQuestion(stool_component.current_token, question, x.text).then(tx => {
-                //stool_component.dirty_compi = true
+            await stool_component.network.addQuestion(stool_component.current_token, question, x.text).then(receipt => {
+                if (receipt.status === 1) {
+                    stool_component.dirty_compi = true
+                    stool_component.working = false
+                    engine.removeEntity(entity.working_entity)
+                    engine.addEntity(entity.ok_entity)
+                    log("addQuestion (Edit Anwser) Ok ", receipt)
+                } else {
+                    // TODO duplicated code
+                    stool_component.working = false
+                    engine.removeEntity(entity.working_entity)
+                    engine.addEntity(entity.error_entity)
+                    log("Error on addQuestion (Edit Anwser)", receipt)
+                }
+                /*//stool_component.dirty_compi = true
                 stool_component.working = false
                 engine.removeEntity(entity.working_entity)
                 engine.addEntity(entity.ok_entity)
-                log("addQuestion (Edit Anwser) Ok ", tx)
+                log("addQuestion (Edit Anwser) Ok ", tx)*/
             }).catch(e => {
                 stool_component.working = false
                 engine.removeEntity(entity.working_entity)
@@ -957,7 +1015,6 @@ export class CompiNPCSystem implements ISystem {
         })
     }
 }
-
 
 function emote2id(emote: string) {
     if (emote == "dance") {
