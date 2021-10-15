@@ -112,7 +112,7 @@ export class Blockchain {
                 matic: {
                     version: '1',
                     abi: abiMinter,
-                    address: '0xd5140d7b09B5DFB0C17e9bAb6EC8a7875B19367C',
+                    address: '0x2E88409bD7eBc3A7b68b808994E2873645b1128D',
                     name: 'CompiMinter',
                     chainId: 137
                 },
@@ -228,6 +228,14 @@ export class Blockchain {
             this.minter_contract
         ).then(async ( contract: any ) => {
             return await contract.isWindowOpen()
+        })
+    }
+
+    async getTimeWindow() {
+        return this.getFactory(
+            this.minter_contract
+        ).then(async ( contract: any ) => {
+            return await contract.getTimeWindow()
         })
     }
 

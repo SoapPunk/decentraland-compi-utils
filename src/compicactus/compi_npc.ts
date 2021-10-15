@@ -104,7 +104,7 @@ export class CompiNPC extends Entity {
 
     price: number
 
-    constructor(id: number, network: Blockchain, minter: boolean) {
+    constructor(id: number, network: Blockchain) {
         super()
         if (network.character == CHARACTER.COMPICACTUS) {
             this.planesMenu = compicactusPlanesMenu
@@ -228,6 +228,7 @@ export class CompiNPC extends Entity {
                 })
             )
 
+            /*
             const help_entity = this.createPlane(this.planesMenu.Help)
             help_entity.addComponent(
                 new OnPointerDown(async ()=>{
@@ -301,6 +302,7 @@ export class CompiNPC extends Entity {
             }))
             this.price_entity.setParent(this)
             this.updatePrice()
+            */
         }
 
         this.arrowleftquestions_entity = this.createPlane(this.planesMenu.ArrowLeftQuestions)
@@ -455,12 +457,14 @@ export class CompiNPC extends Entity {
         engine.removeEntity(this)
     }
 
+    /*
     updatePrice() {
         executeTask(async ()=>{
             this.price = await this.stool_component.network.getPrice()
             this.price_shape.value = this.stool_component.network.wei2human(this.price[0].toString())
         })
     }
+    */
 }
 
 
