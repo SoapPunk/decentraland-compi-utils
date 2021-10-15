@@ -1,12 +1,8 @@
-//import { getUserAccount } from '@decentraland/EthereumController'
 import { getUserPublicKey } from "@decentraland/Identity"
 import { getProvider } from "@decentraland/web3-provider"
 import { sleep } from "../common"
-import {
-  //ContractName,
-  //getContract,
-  sendMetaTransaction,
-} from "decentraland-transactions";
+//import { sendMetaTransaction } from "decentraland-transactions";
+import { sendMetaTransaction } from "./src/sendMetaTransaction";
 import * as eth from "eth-connect";
 
 import abiMANA from './erc20Abi'
