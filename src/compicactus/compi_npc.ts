@@ -138,6 +138,7 @@ export class CompiNPC extends Entity {
             const arrowleftcompi_entity = this.createPlane(this.planesMenu.ArrowLeftCompi)
             arrowleftcompi_entity.addComponent(
                 new OnPointerDown(()=>{
+                    if (this.stool_component.working) return
                     this.stool_component.current_action = "previous_compi"
                 },
                 {
@@ -147,6 +148,7 @@ export class CompiNPC extends Entity {
             const arrowrightcompi_entity = this.createPlane(this.planesMenu.ArrowRightCompi)
             arrowrightcompi_entity.addComponent(
                 new OnPointerDown(()=>{
+                    if (this.stool_component.working) return
                     this.stool_component.current_action = "next_compi"
                 },
                 {
@@ -156,6 +158,7 @@ export class CompiNPC extends Entity {
             const addquestion_entity = this.createPlane(this.planesMenu.Add)
             addquestion_entity.addComponent(
                 new OnPointerDown(() => {
+                    if (this.stool_component.working) return
                     this.stool_component.current_action = "add_question"
                 },
                 {
@@ -166,6 +169,7 @@ export class CompiNPC extends Entity {
             this.editanswer_entity.getComponent(PlaneShape).visible = false
             this.editanswer_entity.addComponent(
                 new OnPointerDown(() => {
+                    if (this.stool_component.working) return
                     this.stool_component.current_action = "edit_answer"
                 },
                 {
@@ -176,6 +180,7 @@ export class CompiNPC extends Entity {
             this.remove_entity.getComponent(PlaneShape).visible = false
             this.remove_entity.addComponent(
                 new OnPointerDown(() => {
+                    if (this.stool_component.working) return
                     this.stool_component.current_action = "remove_question"
                 },
                 {
@@ -185,6 +190,7 @@ export class CompiNPC extends Entity {
             const editname_entity = this.createPlane(this.planesMenu.EditName)
             editname_entity.addComponent(
                 new OnPointerDown(() => {
+                    if (this.stool_component.working) return
                     this.stool_component.current_action = "set_name"
                 },
                 {
@@ -234,6 +240,7 @@ export class CompiNPC extends Entity {
         this.arrowleftquestions_entity = this.createPlane(this.planesMenu.ArrowLeftQuestions)
         this.arrowleftquestions_entity.addComponent(
             new OnPointerDown(() => {
+                if (this.stool_component.working) return
                 this.stool_component.current_action = "previous_question_page"
             },
             {
@@ -243,6 +250,7 @@ export class CompiNPC extends Entity {
         this.arrowrightquestions_entity = this.createPlane(this.planesMenu.ArrowRightQuestions)
         this.arrowrightquestions_entity.addComponent(
             new OnPointerDown(() => {
+                if (this.stool_component.working) return
                 this.stool_component.current_action = "next_question_page"
             },
             {
@@ -264,6 +272,7 @@ export class CompiNPC extends Entity {
         this.compi_entity.getComponent(PlaneShape).uvs = compiplaceholder_entity.getComponent(PlaneShape).uvs
 
         const navigator = new OnPointerDown((e) => {
+            if (this.stool_component.working) return
             if (e.buttonId == 0) {
                 this.stool_component.current_action = "ask_question"
             } else if (e.buttonId == 1) {
@@ -429,7 +438,9 @@ export class CompiNPCSystem implements ISystem {
                 continue
             }
 
-            if (stool_component.working) continue
+            if (stool_component.working) {
+                continue
+            }
             if (stool_component.current_action == "goto_compi") {
                 stool_component.working = true
                 stool_component.current_action = ""
@@ -437,7 +448,6 @@ export class CompiNPCSystem implements ISystem {
                 continue
             }
             if (stool_component.current_compi == -1) {
-                log("-1*********")
                 stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = 0
@@ -450,7 +460,6 @@ export class CompiNPCSystem implements ISystem {
                 continue
             }
             if (stool_component.current_action == "previous_compi") {
-                log("PREVIOUS")
                 stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = stool_component.current_compi - 1
@@ -458,7 +467,6 @@ export class CompiNPCSystem implements ISystem {
                 continue
             }
             if (stool_component.current_action == "next_compi") {
-                log("NEXT")
                 stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = stool_component.current_compi + 1
