@@ -209,7 +209,7 @@ export class Compicactus extends Entity {
         }
 
         const action = compi_actions[animation]
-        const url = `https://dweb.link/ipfs/bafybeicbj4q67wljuxg5bcrgciu2sw5upg4r6z6oq3uvejopumnbbijsoe/mp4/${id}/${id}_${action}.mp4`
+        const url = `https://dweb.link/ipfs/bafybeia7pyfmyjcnjrodau2yxm3h3bs6suv3xfzwvhohktnw6v2cevayaq/mp4/${id}/${id}_${action}.mp4`
         log(url)
         const myVideoClip = new VideoClip(url)
         const myVideoTexture = new VideoTexture(myVideoClip)

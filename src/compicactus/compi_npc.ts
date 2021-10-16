@@ -4,6 +4,8 @@ import { Blockchain } from "./contracts/contracts"
 import { Compicactus, planesMenu as compicactusPlanesMenu } from "./compicactus/compicactus"
 import { Voxters, planesMenu as voxtersPlanesMenu } from "./voxters/voxters"
 
+import { FixShape } from './bugworkaround'
+
 import { CHARACTER, EMOTE } from "./constants"
 
 //import * as eth from "eth-connect"
@@ -227,82 +229,6 @@ export class CompiNPC extends Entity {
                     hoverText: "Waiting for signature. Check wallet!",
                 })
             )
-
-            /*
-            const help_entity = this.createPlane(this.planesMenu.Help)
-            help_entity.addComponent(
-                new OnPointerDown(async ()=>{
-                    openExternalURL("https://compicactus.com/")
-                },
-                {
-                    hoverText: "Compi website",
-                })
-            );
-
-            if (minter) {
-                const mint_entity = this.createPlane(this.planesMenu.Mint)
-                mint_entity.addComponent(
-                    new OnPointerDown(async ()=>{
-                        const current_price = this.price
-                        log("price", current_price);
-
-                        await network.increaseAllowance(current_price[0]).then(receipt => {
-                            if (receipt.status === 1) {
-                                log("IncreaseAllowance Ok ", receipt)
-                                network.mintCompi(current_price[0]).then(receipt => {
-                                    if (receipt.status === 1) {
-                                        log("Mint Ok ", receipt)
-                                    } else {
-                                        log("Error on mint", receipt)
-                                        this.updatePrice()
-                                    }
-                                }).catch(e => {
-                                    log("Error on mint", e)
-                                    this.updatePrice()
-                                })
-                            } else {
-                                log("Error on IncreaseAllowance", receipt)
-                            }
-                        }).catch(e => {
-                            log("Error on IncreaseAllowance", e)
-                        })
-                    },
-                    {
-                        hoverText: "Mint Compi",
-                    })
-                );
-                //mint_button.setParent(compi_core);
-            }
-            const polygonmana_entity = this.createPlane(this.planesMenu.PolygonMana)
-            polygonmana_entity.addComponent(
-                new OnPointerDown(async ()=>{
-                    openExternalURL("https://account.decentraland.org")
-                },
-                {
-                    hoverText: "Get PolygonMana",
-                })
-            );
-
-            // Price Text
-            this.price_shape.textWrapping = true
-            this.price_shape.font = new Font(Fonts.SanFrancisco_Heavy)
-            this.price_shape.hTextAlign = "center"
-            this.price_shape.vTextAlign = "top"
-            this.price_shape.fontSize = 2
-            this.price_shape.fontWeight = 'normal'
-            this.price_shape.value = "-"
-            this.price_shape.width = 1.5
-            this.price_shape.color = Color3.Black()
-            this.price_entity = new Entity()
-            this.price_entity.addComponent(this.price_shape)
-            this.price_entity.addComponent(new Transform({
-                position: new Vector3(0.5, 1.15+y_offset, 0.08),
-                rotation: Quaternion.Euler(0, 180, 0),
-                scale: new Vector3(0.5, 0.5, 1)
-            }))
-            this.price_entity.setParent(this)
-            this.updatePrice()
-            */
         }
 
         this.arrowleftquestions_entity = this.createPlane(this.planesMenu.ArrowLeftQuestions)
@@ -337,35 +263,22 @@ export class CompiNPC extends Entity {
         this.compi_entity.setParent(this)
         this.compi_entity.getComponent(PlaneShape).uvs = compiplaceholder_entity.getComponent(PlaneShape).uvs
 
-        backgroundquestions_entity.addComponent(
-            new OnPointerDown((e) => {
-                if (e.buttonId == 0) {
-                    this.stool_component.current_action = "ask_question"
-                } else if (e.buttonId == 1) {
-                    this.stool_component.current_action = "previous_question"
-                } else if (e.buttonId == 2) {
-                    this.stool_component.current_action = "next_question"
-                }
-            },
-            {
-                hoverText: "E: Up - F: Down - Click: Ask",
-            })
-        )
+        const navigator = new OnPointerDown((e) => {
+            if (e.buttonId == 0) {
+                this.stool_component.current_action = "ask_question"
+            } else if (e.buttonId == 1) {
+                this.stool_component.current_action = "previous_question"
+            } else if (e.buttonId == 2) {
+                this.stool_component.current_action = "next_question"
+            }
+        },
+        {
+            hoverText: "E: Up - F: Down - Click: Ask",
+        })
 
-        backgroundanswers_entity.addComponent(
-            new OnPointerDown((e) => {
-                if (e.buttonId == 0) {
-                    this.stool_component.current_action = "ask_question"
-                } else if (e.buttonId == 1) {
-                    this.stool_component.current_action = "previous_question"
-                } else if (e.buttonId == 2) {
-                    this.stool_component.current_action = "next_question"
-                }
-            },
-            {
-                hoverText: "E: Up - F: Down - Click: Ask",
-            })
-        )
+        backgroundquestions_entity.addComponent(navigator)
+
+        backgroundanswers_entity.addComponent(navigator)
 
         // Compi Data (id: name)
         this.compidata_shape.fontSize = 1
@@ -450,6 +363,8 @@ export class CompiNPC extends Entity {
 
         e.addComponent(myMaterial)
         e.setParent(this)
+
+        e.addComponent(new FixShape())
         return e
     }
 
@@ -522,12 +437,11 @@ export class CompiNPCSystem implements ISystem {
                 continue
             }
             if (stool_component.current_compi == -1) {
+                log("-1*********")
                 stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = 0
                 this.goto(stool_component)
-                continue
-            } else if (stool_component.current_compi == -2) {
                 continue
             }
             if (stool_component.dirty_compi) {
@@ -535,12 +449,8 @@ export class CompiNPCSystem implements ISystem {
                 this.updateCompi(stool)
                 continue
             }
-            if (stool_component.dirty_questions) {
-                stool_component.working = true
-                this.updateQuestions(stool)
-                continue
-            }
             if (stool_component.current_action == "previous_compi") {
+                log("PREVIOUS")
                 stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = stool_component.current_compi - 1
@@ -548,10 +458,18 @@ export class CompiNPCSystem implements ISystem {
                 continue
             }
             if (stool_component.current_action == "next_compi") {
+                log("NEXT")
                 stool_component.working = true
                 stool_component.current_action = ""
                 stool_component.goto_compi = stool_component.current_compi + 1
                 this.goto(stool_component)
+                continue
+            } else if (stool_component.current_compi == -2) {
+                continue
+            }
+            if (stool_component.dirty_questions) {
+                stool_component.working = true
+                this.updateQuestions(stool)
                 continue
             }
             if (stool_component.current_action == "add_question") {
@@ -644,6 +562,8 @@ export class CompiNPCSystem implements ISystem {
             } else {
                 log("else1")
                 stool_component.current_compi = -2
+                stool_component.goto_compi = 0
+                stool_component.dirty_compi = true
             }
         } else {
             log("else2")
@@ -721,6 +641,8 @@ export class CompiNPCSystem implements ISystem {
         const stool_component = entity.getComponent(StoolComponent)
         stool_component.dirty_compi = false
         if (stool_component.current_compi < 0) {
+            entity.compi_entity.set_body(0, 0, true)
+            entity.compidata_shape.value = "Demo"
             stool_component.working = false
             return
         }
@@ -739,7 +661,11 @@ export class CompiNPCSystem implements ISystem {
             compiId = stool_component.current_token = stool_component.current_compi
         }
         log("compiId", compiId)
-        const compiName = await stool_component.network.getName(compiId)
+        let compiName = await stool_component.network.getName(compiId)
+
+        if (compiName === "") {
+            compiName = "No name set"
+        }
 
         entity.compidata_shape.value = `#${compiId}:${compiName}`
 
