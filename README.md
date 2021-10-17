@@ -3,7 +3,19 @@ Tool to display compicactus NPCs on Decentraland
 
 [![Publish NPM package](https://github.com/SoapPunk/decentraland-compi-utils/actions/workflows/master.yml/badge.svg?branch=main)](https://github.com/SoapPunk/decentraland-compi-utils/actions/workflows/master.yml)
 
-To use Compis in your scene:
+- Website: https://compicactus.com
+- Buy NFT: https://play.decentraland.org/?position=47%2C-45
+
+Compicactus is a PFP project to build a community around the creation of intelligent virtual beings for the metaverse.
+GPT-3 is amazing, but Compicactus will use technologies that don't need any kind of centralized service, and allow the execution of the AI locally. This is paramount to ensure privacy and full control of personal data.
+
+If you are interested in the project join us and share it with friends! 🤖
+
+---
+
+## Usage on Decentraland
+
+To use Compis in your Decentraland scene:
 
 1. Install the library as an npm bundle. Run this command in your scene's project folder:
 
@@ -48,6 +60,62 @@ engine.addEntity(compi)
 ```
 
 Done! Now you can run de scene and setup your Compicactus.
+
+## Adding questions
+
+You can add questions and answers, that will be stored on-chain, to allow interactivity with the characters.
+
+1. Click on the Add Question (+) button (Note: Questions can't be edited).
+2. Enter your question, and press Enter.
+3. Confirm the signature on Metamask and wait arount 10 seconds.
+4. Click on the white panel to ask the new question, you will see a default answer.
+5. Click on the Edit Answer (pencil) button.
+6. Enter the new answer, and press Enter.
+7. Confirm the signature on Metamask and wait arount 10 seconds.
+8. Click on the white panel to ask the new question, you will see the new answer.
+
+## Editing questions
+
+Questions can't be edited, only the answers. You will need to add a new Question/Answer and remove the previous one.
+
+# Removing questions
+
+Questions can be removed using the Remove Question (x) button. But take into acount that the order in wich are displayed will be disrupted in the following way:
+
+- Q1
+- Q2
+- Q3
+
+Removing Q1 will result in:
+
+- Q3
+- Q2
+
+The last question takes the place of the removed question.
+
+## Adding metadata to answers
+
+You can include a JSON object in your answers to tell the character aditional information about how to perform.
+
+Fire animations:
+`So funny! {"emote":"lol"}`
+
+Play sounds:
+`Warning! {"audio":"https://cors-enabled-server/warning.mp3"`
+
+The list of emotes is:
+- `dance`
+- `lol`
+- `alert`
+- `swing`
+- `look_l`
+- `look_r`
+- `look_r_l`
+- `look_up`
+- `pissed_off`
+- `sigh`
+- `sleep`
+- `yawn`
 
 ---
 
