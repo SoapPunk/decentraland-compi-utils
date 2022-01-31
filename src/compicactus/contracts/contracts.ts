@@ -1,14 +1,39 @@
 import { getUserPublicKey } from "@decentraland/Identity"
 import { getProvider } from "@decentraland/web3-provider"
+//import { connection, ProviderType } from 'decentraland-connect'
 import { sleep } from "../common"
 //import { sendMetaTransaction } from "decentraland-transactions";
-import { sendMetaTransaction } from "./src/sendMetaTransaction";
-import * as eth from "eth-connect";
+//import { sendMetaTransaction } from "./src/sendMetaTransaction";
+import * as eth from "eth-connect"
+
+//import { ethers } from 'ethers'
 
 import abiMANA from './erc20Abi'
 import abiMinter from './minterAbi'
 import abiPFP from './pfpAbi'
 import abiBrain from './brainAbi'
+
+import {
+  getAccount,
+  getNonce,
+  getSignature,
+  getExecuteMetaTransactionData,
+  getSalt,
+  isContract,
+  getSignatureParameters
+} from './meta/utils'
+
+import {
+  Provider,
+  Configuration,
+  DataToSign,
+  ContractData,
+  DomainData,
+  DOMAIN_TYPE,
+  META_TRANSACTION_TYPE
+} from './meta/types'
+
+// import {domainType, metaTransactionType} from './utils'
 
 import { CHARACTER, NETWORK } from "../constants"
 
@@ -167,6 +192,53 @@ export class Blockchain {
     }
 
     async prepareMetaTransaction(functionSignature: any, contractConfig: any) {
+
+        log("functionSignature", functionSignature)
+        log("functionSignature.data", functionSignature.data)
+
+        const provider = await getProvider();
+        //const { provider } = await connection.connect(ProviderType.INJECTED)
+        const requestManager: any = new eth.RequestManager(provider);
+
+        const account = await getUserPublicKey()
+
+        log("Sending meta transaction")
+
+        const nonce = await getNonce(
+            this.metaRequestManager,
+            account,
+            contractConfig.address
+        )
+
+        log("nonce", nonce)
+
+        const salt = getSalt(contractConfig.chainId)
+
+        const domainData = getDomainData(salt, contractConfig)
+
+        const dataToSign = getDataToSign(
+            account,
+            nonce,
+            functionSignature.data,
+            domainData
+        )
+        log("dataToSign", dataToSign)
+        const signature = await getSignature(
+            requestManager,
+            account,
+            JSON.stringify(dataToSign)
+        )
+
+        log("signature", signature)
+
+        let { r, s, v } = getSignatureParameters(signature)
+
+        return sendTransaction(account, contractConfig, functionSignature.data, r, s, v)
+
+    }
+
+    async prepareMetaTransaction_old(functionSignature: any, contractConfig: any) {
+        /*
         const provider = await getProvider();
         const requestManager: any = new eth.RequestManager(provider);
 
@@ -176,6 +248,7 @@ export class Blockchain {
           functionSignature.data,
           contractConfig
         )
+        */
     }
 
     async getFactory(contractConfig: any) {
@@ -431,3 +504,70 @@ export class Blockchain {
     }
 
 }
+
+function getDataToSign(
+  account: string,
+  nonce: string,
+  functionSignature: string,
+  domainData: DomainData
+): DataToSign {
+  return {
+    types: {
+      EIP712Domain: DOMAIN_TYPE,
+      MetaTransaction: META_TRANSACTION_TYPE
+    },
+    domain: domainData,
+    primaryType: 'MetaTransaction',
+    message: {
+      nonce: parseInt(nonce, 16),
+      from: account,
+      functionSignature: functionSignature
+    }
+  }
+}
+
+function getDomainData(salt: string, contractData: ContractData): DomainData {
+  return {
+    name: contractData.name,
+    version: contractData.version,
+    verifyingContract: contractData.address,
+    salt
+  }
+}
+
+async function sendTransaction (userAddress: string, contractConfig: any, functionData: any, r:string, s:string, v: number) {
+    try {
+        if (contractConfig.name != "CompiBrain") {
+            throw new Error("Only CompiBrain allowed");
+        }
+        let tx = await fetch(`https://api.biconomy.io/api/v2/meta-tx/native`, {
+            method: "POST",
+            headers: {
+                "x-api-key" : "i9-eTBtwe.d7329c08-cc47-4c48-ae64-6cb6b6cf81e4",
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify({
+                "to": contractConfig.address,
+                "apiId": "45770c1c-bc67-41c1-8948-530da59fd7d1",
+                "params": [userAddress, functionData, r, s, v],
+                "from": userAddress
+            })
+        })
+        .then(response=>response.json())
+        .then(async function(result) {
+            log(result);
+            return result.txHash;
+            //showInfoMessage(`Transaction sent by relayer with hash ${result.txHash}`);
+
+            //let receipt = await getTransactionReceiptMined(result.txHash, 2000);
+            //setTransactionHash(result.txHash);
+            //showSuccessMessage("Transaction confirmed on chain");
+            //getQuoteFromNetwork();
+        }).catch(function(error) {
+            log(error)
+        })
+        return tx;
+    } catch (error) {
+        log(error);
+    }
+};

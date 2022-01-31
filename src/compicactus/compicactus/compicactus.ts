@@ -1,4 +1,4 @@
-import { fetchRetry } from '../common'
+import { fetchRetry, sleep } from '../common'
 import planesMenu from "./planesMenuC"
 
 export {planesMenu}
@@ -215,7 +215,13 @@ export class Compicactus extends Entity {
         const myVideoTexture = new VideoTexture(myVideoClip)
         this.plane_material.texture = myVideoTexture
 
+        // executeTask(async () => {
+        //     sleep(1000)
+        //     myVideoTexture.seekTime(0)
+        //     myVideoTexture.playing = true
+        // })
         myVideoTexture.playing = true
+
     }
 
     async set_body_(id: number) {

@@ -42,6 +42,7 @@ export type ContractData = {
 
 export enum ContractName {
   Bid = 'Bid',
+  BidV2 = 'BidV2',
   CollectionFactory = 'CollectionFactory',
   CollectionManager = 'CollectionManager',
   CollectionStore = 'CollectionStore',
@@ -52,7 +53,10 @@ export enum ContractName {
   Forwarder = 'Forwarder',
   MANAToken = 'MANAToken',
   Marketplace = 'Marketplace',
-  Rarities = 'Rarities'
+  MarketplaceV2 = 'MarketplaceV2',
+  Rarities = 'Rarities',
+  ThirdPartyRegistry = 'ThirdPartyRegistry',
+  Tiers = 'Tiers'
 }
 
 export type MetaTxData = {

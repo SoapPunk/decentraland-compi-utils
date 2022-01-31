@@ -311,7 +311,7 @@ export class CompiNPC extends Entity {
         this.questions_shape.hTextAlign = "left"
         this.questions_shape.vTextAlign = "top"
         this.questions_shape.fontSize = 1
-        this.questions_shape.fontWeight = 'normal'
+        //this.questions_shape.fontWeight = 'normal'
         this.questions_shape.value = ""
         this.questions_shape.width = 1.5
         this.questions_shape.color = Color3.Black()
@@ -331,7 +331,7 @@ export class CompiNPC extends Entity {
         this.answer_shape.hTextAlign = "center"
         this.answer_shape.vTextAlign = "top"
         this.answer_shape.fontSize = 1
-        this.answer_shape.fontWeight = 'normal'
+        //this.answer_shape.fontWeight = 'normal'
         this.answer_shape.value = ""
         this.answer_shape.width = 1.3
         this.answer_shape.color = Color3.Black()
@@ -351,7 +351,7 @@ export class CompiNPC extends Entity {
         this.textInput.hAlign = "center"
         this.textInput.fontSize = 30
         this.textInput.placeholder = "Write name here"
-        this.textInput.placeholderColor = Color4.Gray()
+        //this.textInput.placeholderColor = Color4.Gray()
         this.textInput.positionY = "200px"
         this.textInput.isPointerBlocker = true
         this.textInput.visible = false
@@ -373,7 +373,7 @@ export class CompiNPC extends Entity {
         e.addComponent(myMaterial)
         e.setParent(this)
 
-        e.addComponent(new FixShape())
+        //e.addComponent(new FixShape())
         return e
     }
 
@@ -746,7 +746,7 @@ export class CompiNPCSystem implements ISystem {
             entity.textInput.visible = false
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await stool_component.network.setName(stool_component.current_token, x.text).then(receipt => {
+            await stool_component.network.setName(stool_component.current_token, x.text.trim()).then(receipt => {
                 if (receipt.status === 1) {
                     stool_component.dirty_compi = true
                     stool_component.working = false
@@ -855,7 +855,7 @@ export class CompiNPCSystem implements ISystem {
             entity.textInput.visible = false
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await stool_component.network.addQuestion(stool_component.current_token, x.text, "Default answer").then(receipt => {
+            await stool_component.network.addQuestion(stool_component.current_token, x.text.trim(), "Default answer").then(receipt => {
                 if (receipt.status === 1) {
                     stool_component.dirty_compi = true
                     stool_component.working = false
@@ -925,7 +925,7 @@ export class CompiNPCSystem implements ISystem {
             const question = stool_component.question_list[stool_component.current_question].value
             engine.removeEntity(entity.cancel_entity)
             engine.addEntity(entity.working_entity)
-            await stool_component.network.addQuestion(stool_component.current_token, question, x.text).then(receipt => {
+            await stool_component.network.addQuestion(stool_component.current_token, question, x.text.trim()).then(receipt => {
                 if (receipt.status === 1) {
                     stool_component.dirty_compi = true
                     stool_component.working = false

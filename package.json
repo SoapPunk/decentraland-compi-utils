@@ -31,7 +31,8 @@
   "homepage": "https://github.com/SoapPunk/decentraland-compi-utils",
   "devDependencies": {
     "@dcl/schemas": "^1.1.0",
-    "decentraland-ecs": "^6.6.7",
+    "decentraland-ecs": "^6.8.0",
+    "eth-connect": "^6.0.2",
     "prettier": "^1.19.1",
     "rollup": "^2.35.1",
     "rollup-plugin-commonjs": "^10.1.0",
@@ -40,9 +41,6 @@
     "rollup-plugin-typescript2": "^0.29.0",
     "semantic-release": "^16.0.1",
     "typescript": "^3.9.3"
-  },
-  "dependencies": {
-    "eth-connect": "^6.0.2"
   },
   "bundleDependencies": [
     "decentraland-transactions",
